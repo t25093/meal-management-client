@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import api from '../api/client';
 import { getErrorMessage } from '../api/errors';
 import { saveAuth } from '../auth';
@@ -8,6 +8,8 @@ import Logo from '../components/Logo';
 // מסך אחד להתחברות ולהרשמה
 export default function LoginPage() {
   const navigate = useNavigate();
+  // הודעה ממסך קודם, למשל אחרי מחיקת חשבון
+  const notice = useLocation().state?.message;
   const [isRegister, setIsRegister] = useState(false);
   const [fullName, setFullName] = useState('');
   const [email, setEmail] = useState('');
@@ -38,6 +40,7 @@ export default function LoginPage() {
         </div>
         <form className="card" onSubmit={handleSubmit}>
           <h1>{isRegister ? 'הרשמה' : 'התחברות'}</h1>
+          {notice && !error && <div className="success">{notice}</div>}
           {error && <div className="error">{error}</div>}
           {isRegister && (
             <label>

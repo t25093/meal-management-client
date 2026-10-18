@@ -522,3 +522,30 @@ tbody tr:hover td { background: #fcfaf5; }
 }
 .chat-form input { border-radius: 999px; padding-inline: 16px; }
 .chat-form button { border-radius: 999px; }
+
+/* ===== חזרה לדף הקודם ומחיקה ===== */
+.back-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 14px;
+  padding: 6px 14px;
+  font-size: 14px;
+  background: var(--surface);
+  color: var(--primary-dark);
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow);
+}
+.back-button:hover { background: var(--bg); }
+.meal-title {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+.meal-title h1 { margin-bottom: 8px; }
+@media (max-width: 560px) {
+  .topbar { flex-wrap: wrap; }
+  .topbar .user { flex-wrap: wrap; justify-content: flex-end; gap: 6px 8px; font-size: 13px; }
+}

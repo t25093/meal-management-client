@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
-import { useParams } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 import api from '../api/client';
 import { loadAllDishes } from '../api/dishes';
 import { getErrorMessage, isConflict } from '../api/errors';
@@ -13,7 +13,9 @@ import RecipesPanel from '../components/RecipesPanel';
 
 export default function MealDetailsPage() {
   const { mealId } = useParams();
-  const currentUserId = getUser()?.id;
+  const navigate = useNavigate();
+  const currentUser = getUser();
+  const currentUserId = currentUser?.id;
 
   const [meal, setMeal] = useState(null);
   const [mealDishes, setMealDishes] = useState([]);
@@ -127,6 +129,21 @@ export default function MealDetailsPage() {
     }
   }
 
+  // מחיקת הארוחה כולה: בעלת הארוחה או מנהלת המערכת
+  async function handleDeleteMeal() {
+    const confirmed = window.confirm(
+      `למחוק את הארוחה "${meal.name}"?\nכל המנות, ההודעות והמתכונים שלה יימחקו. אי אפשר לבטל את הפעולה.`
+    );
+    if (!confirmed) return;
+    clearMessages();
+    try {
+      await api.delete(`/api/meals/${mealId}`);
+      navigate('/meals?role=owner', { replace: true });
+    } catch (err) {
+      setError(getErrorMessage(err));
+    }
+  }
+
   async function handleAddParticipant(e) {
     e.preventDefault();
     clearMessages();
@@ -148,7 +165,12 @@ export default function MealDetailsPage() {
     <div className="layout">
       <main>
         <div className="card meal-header">
-          <h1>{meal.name}</h1>
+          <div className="meal-title">
+            <h1>{meal.name}</h1>
+            {(meal.isOwner || currentUser?.role === 'Admin') && (
+              <button className="small danger" onClick={handleDeleteMeal}>🗑 מחיקת הארוחה</button>
+            )}
+          </div>
           <div className="meal-meta">
             <span className={`badge ${meal.mealType}`}>ארוחה {mealTypes[meal.mealType]}</span>
             <span>📅 <b>{formatDate(meal.eventDate)}</b></span>
