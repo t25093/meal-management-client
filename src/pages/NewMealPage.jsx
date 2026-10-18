@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import api from '../api/client';
 import { loadAllDishes } from '../api/dishes';
 import { getErrorMessage } from '../api/errors';
-import { categories, fitsMeal } from '../labels';
+import { categories, fitsMeal, mealTypes } from '../labels';
 import MenuPicker from '../components/MenuPicker';
 import NewDishForm from '../components/NewDishForm';
 
@@ -44,8 +44,14 @@ export default function NewMealPage() {
     setMenuItems(menuItems.filter((_, i) => i !== index));
   }
 
+  // מאכל חדש נכנס למאגר, ואם הוא מתאים לסוג הארוחה הוא מתווסף מיד גם לתפריט
   function handleDishCreated(dish) {
     setDishes([...dishes, dish]);
+    if (fitsMeal(dish, mealType)) {
+      addMenuItem({ dishId: dish.id, category: dish.category, name: dish.name });
+    } else {
+      setError(`${dish.name} נוסף למאגר, אבל אינו מתאים לארוחה ${mealTypes[mealType]} ולכן לא נוסף לתפריט`);
+    }
   }
 
   async function handleSubmit(e) {
@@ -62,7 +68,7 @@ export default function NewMealPage() {
       });
       const mealId = response.data.id;
 
-      // הוספת המשתתפות אחת אחת. אימייל שלא קיים במערכת לא מבטל את הארוחה.
+      // הוספת המשתתפות אחת אחת. אימייל שלא רשום נשמר כהזמנה, ושגיאה לא מבטלת את הארוחה.
       const failed = [];
       const list = emails.split(/[\s,;]+/).filter((x) => x);
       for (const email of list) {
@@ -92,7 +98,7 @@ export default function NewMealPage() {
           חלק מהמשתתפות לא נוספו:
           <ul>{participantErrors.map((x) => <li key={x}>{x}</li>)}</ul>
         </div>
-        <button onClick={() => navigate(`/meals/${createdMealId}`)}>מעבר לארוחה</button>
+        <button className="primary" onClick={() => navigate(`/meals/${createdMealId}`)}>מעבר לארוחה</button>
       </>
     );
   }
@@ -101,46 +107,59 @@ export default function NewMealPage() {
     <>
       <h1>הוספת ארוחה</h1>
       {error && <div className="error">{error}</div>}
-      <form className="card" onSubmit={handleSubmit}>
-        <div className="row">
-          סוג:
-          <label style={{ margin: 0 }}>
-            <input type="radio" checked={mealType === 'Dairy'} onChange={() => changeMealType('Dairy')} /> חלבית
-          </label>
-          <label style={{ margin: 0 }}>
-            <input type="radio" checked={mealType === 'Meat'} onChange={() => changeMealType('Meat')} /> בשרית
-          </label>
+      <form onSubmit={handleSubmit}>
+        <div className="card">
+          <h3>פרטי הארוחה</h3>
+          <div className="row">
+            <span className="segmented">
+              <label>
+                <input type="radio" checked={mealType === 'Dairy'} onChange={() => changeMealType('Dairy')} /> חלבית
+              </label>
+              <label>
+                <input type="radio" checked={mealType === 'Meat'} onChange={() => changeMealType('Meat')} /> בשרית
+              </label>
+            </span>
+          </div>
+          <div className="form-grid">
+            <label>
+              שם הארוחה
+              <input value={name} onChange={(e) => setName(e.target.value)} required />
+            </label>
+            <label>
+              תאריך ושעה
+              <input type="datetime-local" value={eventDate} onChange={(e) => setEventDate(e.target.value)} required />
+            </label>
+            <label>
+              מספר אורחים
+              <input type="number" min="1" max="1000"
+                value={guestsCount} onChange={(e) => setGuestsCount(e.target.value)} required />
+            </label>
+          </div>
         </div>
-        <div className="row">
-          <input placeholder="שם הארוחה" value={name} onChange={(e) => setName(e.target.value)} required />
-          תאריך:
-          <input type="datetime-local" value={eventDate} onChange={(e) => setEventDate(e.target.value)} required />
-          אורחים:
-          <input type="number" min="1" max="1000" style={{ width: 80 }}
-            value={guestsCount} onChange={(e) => setGuestsCount(e.target.value)} required />
+
+        <div className="card">
+          <h3>תפריט</h3>
+          <MenuPicker dishes={dishes} mealType={mealType} onAdd={addMenuItem} />
+          {menuItems.length > 0 && (
+            <ul className="chips">
+              {menuItems.map((item, i) => (
+                <li key={i}>
+                  {categories[item.category]}: {item.name}
+                  <button type="button" className="small danger" onClick={() => removeMenuItem(i)}>הסרה</button>
+                </li>
+              ))}
+            </ul>
+          )}
         </div>
 
-        <h3>תפריט</h3>
-        <MenuPicker dishes={dishes} mealType={mealType} onAdd={addMenuItem} />
-        {menuItems.length > 0 && (
-          <ul>
-            {menuItems.map((item, i) => (
-              <li key={i}>
-                {categories[item.category]}: {item.name}{' '}
-                <button type="button" onClick={() => removeMenuItem(i)}>הסרה</button>
-              </li>
-            ))}
-          </ul>
-        )}
-
-        <h3>משתתפות</h3>
-        <label>
-          אימיילים (אחד בכל שורה)
-          <br />
-          <textarea rows="3" cols="40" value={emails} onChange={(e) => setEmails(e.target.value)} />
-        </label>
-
-        <button type="submit">יצירת הארוחה</button>
+        <div className="card">
+          <h3>משתתפות</h3>
+          <label>
+            אימיילים (אחד בכל שורה)
+            <textarea rows="3" value={emails} onChange={(e) => setEmails(e.target.value)} />
+          </label>
+          <button type="submit">יצירת הארוחה</button>
+        </div>
       </form>
 
       <NewDishForm defaultKashrut={mealType} onCreated={handleDishCreated} />

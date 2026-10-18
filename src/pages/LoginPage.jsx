@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import api from '../api/client';
 import { getErrorMessage } from '../api/errors';
 import { saveAuth } from '../auth';
+import Logo from '../components/Logo';
 
 // מסך אחד להתחברות ולהרשמה
 export default function LoginPage() {
@@ -28,32 +29,38 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="page" style={{ maxWidth: 400 }}>
-      <h1>{isRegister ? 'הרשמה' : 'התחברות'}</h1>
-      {error && <div className="error">{error}</div>}
-      <form className="card" onSubmit={handleSubmit}>
-        {isRegister && (
+    <div className="auth-screen">
+      <div className="auth-box">
+        <div className="auth-brand">
+          <Logo size={72} />
+          <h2>מנה-לי</h2>
+          <p className="tagline">כל אחת מביאה מנה, כולן נהנות</p>
+        </div>
+        <form className="card" onSubmit={handleSubmit}>
+          <h1>{isRegister ? 'הרשמה' : 'התחברות'}</h1>
+          {error && <div className="error">{error}</div>}
+          {isRegister && (
+            <label>
+              שם מלא
+              <input value={fullName} onChange={(e) => setFullName(e.target.value)} required />
+            </label>
+          )}
           <label>
-            שם מלא
-            <br />
-            <input value={fullName} onChange={(e) => setFullName(e.target.value)} required />
+            אימייל
+            <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} required />
           </label>
-        )}
-        <label>
-          אימייל
-          <br />
-          <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} required />
-        </label>
-        <label>
-          סיסמה
-          <br />
-          <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} required />
-        </label>
-        <button type="submit">{isRegister ? 'הרשמה' : 'כניסה'}</button>
-      </form>
-      <button onClick={() => { setIsRegister(!isRegister); setError(''); }}>
-        {isRegister ? 'יש לי כבר חשבון: להתחברות' : 'אין לי חשבון: להרשמה'}
-      </button>
+          <label>
+            סיסמה
+            <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} required />
+          </label>
+          <button type="submit">{isRegister ? 'הרשמה' : 'כניסה'}</button>
+          <div className="auth-switch">
+            <button type="button" className="link" onClick={() => { setIsRegister(!isRegister); setError(''); }}>
+              {isRegister ? 'יש לי כבר חשבון: להתחברות' : 'אין לי חשבון: להרשמה'}
+            </button>
+          </div>
+        </form>
+      </div>
     </div>
   );
 }

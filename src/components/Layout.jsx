@@ -1,5 +1,6 @@
 import { Link, Navigate, Outlet, useNavigate } from 'react-router-dom';
 import { getToken, getUser, logout } from '../auth';
+import Logo from './Logo';
 
 // מסגרת לכל המסכים שדורשים התחברות. בלי token מעבירה למסך ההתחברות.
 export default function Layout() {
@@ -18,10 +19,10 @@ export default function Layout() {
   return (
     <>
       <div className="topbar">
-        <Link to="/">דף הבית</Link>
-        <span>
-          שלום, {user?.fullName}{' '}
-          <button onClick={handleLogout}>יציאה</button>
+        <Link to="/" className="brand"><Logo size={34} /><span>מנה-לי</span></Link>
+        <span className="user">
+          שלום, {user?.fullName}
+          <button className="small" onClick={handleLogout}>יציאה</button>
         </span>
       </div>
       <div className="page">

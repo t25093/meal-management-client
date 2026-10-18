@@ -35,34 +35,43 @@ export default function MealsListPage() {
       {result && (
         <>
           {result.items.length === 0 ? (
-            <p>אין ארוחות להצגה.</p>
+            <div className="empty">אין ארוחות להצגה.</div>
           ) : (
-            <table>
-              <thead>
-                <tr>
-                  <th>שם</th>
-                  <th>תאריך</th>
-                  <th>סוג</th>
-                  <th>אורחים</th>
-                  <th>בעלת הארוחה</th>
-                  <th>נלקח</th>
-                </tr>
-              </thead>
-              <tbody>
-                {result.items.map((meal) => (
-                  <tr key={meal.id} className="clickable" onClick={() => navigate(`/meals/${meal.id}`)}>
-                    <td>{meal.name}</td>
-                    <td>{formatDate(meal.eventDate)}</td>
-                    <td>{mealTypes[meal.mealType]}</td>
-                    <td>{meal.guestsCount}</td>
-                    <td>{meal.ownerName}</td>
-                    <td>{Math.round(meal.coveragePercent)}%</td>
+            <div className="table-wrap">
+              <table>
+                <thead>
+                  <tr>
+                    <th>שם</th>
+                    <th>תאריך</th>
+                    <th>סוג</th>
+                    <th>אורחים</th>
+                    <th>בעלת הארוחה</th>
+                    <th>נלקח</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
+                </thead>
+                <tbody>
+                  {result.items.map((meal) => (
+                    <tr key={meal.id} className="clickable" onClick={() => navigate(`/meals/${meal.id}`)}>
+                      <td><b>{meal.name}</b></td>
+                      <td>{formatDate(meal.eventDate)}</td>
+                      <td><span className={`badge ${meal.mealType}`}>{mealTypes[meal.mealType]}</span></td>
+                      <td>{meal.guestsCount}</td>
+                      <td>{meal.ownerName}</td>
+                      <td>
+                        <div className="progress">
+                          <div className="bar">
+                            <div className="fill" style={{ width: `${Math.min(100, Math.round(meal.coveragePercent))}%` }} />
+                          </div>
+                          <span>{Math.round(meal.coveragePercent)}%</span>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           )}
-          <div className="row" style={{ marginTop: 12 }}>
+          <div className="row pager">
             <button disabled={page <= 1} onClick={() => goToPage(page - 1)}>הקודם</button>
             <span>
               עמוד {result.page} מתוך {Math.max(result.totalPages, 1)} ({result.totalCount} ארוחות)

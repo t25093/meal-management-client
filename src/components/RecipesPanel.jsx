@@ -51,30 +51,32 @@ export default function RecipesPanel({ mealId, meal, currentUserId }) {
 
   return (
     <div className="card">
-      <h3>מתכונים</h3>
+      <h3>📖 מתכונים</h3>
       {error && <div className="error">{error}</div>}
       {recipes.length === 0 && <p className="muted">אין מתכונים עדיין.</p>}
       {recipes.map((r) => (
         <div key={r.id} className="recipe">
-          <b>{r.title}</b>{r.dishName && ` (${r.dishName})`}
-          <div className="muted">{r.authorName}</div>
+          <div className="recipe-head">
+            <div>
+              <b>{r.title}</b>{r.dishName && ` (${r.dishName})`}
+              <div className="muted">{r.authorName}</div>
+            </div>
+            {(r.authorId === currentUserId || meal.isOwner) && (
+              <button className="small danger" onClick={() => handleDelete(r.id)}>מחיקה</button>
+            )}
+          </div>
           <div>{r.content}</div>
-          {(r.authorId === currentUserId || meal.isOwner) && (
-            <button onClick={() => handleDelete(r.id)}>מחיקה</button>
-          )}
         </div>
       ))}
-      <form onSubmit={handleAdd} style={{ marginTop: 12 }}>
+      <form className="recipe-form" onSubmit={handleAdd}>
         <select value={dishId} onChange={(e) => setDishId(e.target.value)}>
           <option value="">מתכון כללי</option>
           {menuDishes.map((md) => (
             <option key={md.id} value={md.dishId}>{md.dishName}</option>
           ))}
         </select>
-        <input placeholder="כותרת" value={title} onChange={(e) => setTitle(e.target.value)} required
-          style={{ width: '100%', boxSizing: 'border-box', margin: '6px 0' }} />
-        <textarea placeholder="המתכון" rows="4" value={content} onChange={(e) => setContent(e.target.value)} required
-          style={{ width: '100%', boxSizing: 'border-box' }} />
+        <input placeholder="כותרת" value={title} onChange={(e) => setTitle(e.target.value)} required />
+        <textarea placeholder="המתכון" rows="4" value={content} onChange={(e) => setContent(e.target.value)} required />
         <button type="submit">הוספת מתכון</button>
       </form>
     </div>

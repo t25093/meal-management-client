@@ -8,15 +8,19 @@ export const categories = {
   Side: 'תוספת',
   Dessert: 'קינוח',
   Drink: 'שתייה',
+  CakeBar: 'בר עוגות',
+  Disposables: 'חד פעמי',
 };
 
+// בדיוק כמו ה-Enum MeasureUnit בשרת
 export const units = {
   Unit: 'יחידות',
+  Portion: 'מנות',
   Gram: 'גרם',
   Kilogram: 'ק"ג',
+  Milliliter: 'מ"ל',
   Liter: 'ליטר',
-  Portion: 'מנות',
-  Tray: 'מגשים',
+  Cup: 'כוסות',
 };
 
 // בשרת השדה נקרא KashrutType (ובגרסה מוקדמת KosherType). קוראים את שניהם.

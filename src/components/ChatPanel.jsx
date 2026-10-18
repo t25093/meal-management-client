@@ -1,12 +1,14 @@
 import { useEffect, useRef, useState } from 'react';
 import api from '../api/client';
 import { getErrorMessage } from '../api/errors';
+import { getUser } from '../auth';
 import { formatDate } from '../labels';
 
 const POLL_MS = 3000;
 
 // צ'אט ב-REST: טעינה ראשונה, ואחריה משיכה כל 3 שניות של הודעות חדשות בלבד (afterId)
 export default function ChatPanel({ mealId }) {
+  const currentUserId = getUser()?.id;
   const [messages, setMessages] = useState([]);
   const [text, setText] = useState('');
   const [error, setError] = useState('');
@@ -71,17 +73,24 @@ export default function ChatPanel({ mealId }) {
 
   return (
     <div className="card">
-      <h3>צ'אט</h3>
+      <h3>💬 צ'אט</h3>
       {error && <div className="error">{error}</div>}
       <div className="chat-list" ref={listRef}>
-        {messages.map((m) => (
-          <div key={m.id} className="chat-msg">
-            <b>{m.senderName}:</b> {m.content}
-            <div className="muted">{formatDate(m.sentAt)}</div>
-          </div>
-        ))}
+        {messages.length === 0 && <p className="muted chat-empty">עדיין אין הודעות. אפשר לפתוח את השיחה!</p>}
+        {messages.map((m) => {
+          // הודעות שלי בצד אחד, של אחרות בצד השני. השם והשעה מחוץ לבועה.
+          const mine = m.senderId === currentUserId;
+          return (
+            <div key={m.id} className={`chat-item ${mine ? 'mine' : 'theirs'}`}>
+              <div className="chat-meta">
+                <b>{mine ? 'אני' : m.senderName}</b> · {formatDate(m.sentAt)}
+              </div>
+              <div className="chat-bubble">{m.content}</div>
+            </div>
+          );
+        })}
       </div>
-      <form className="row" onSubmit={handleSend}>
+      <form className="row chat-form" onSubmit={handleSend}>
         <input style={{ flex: 1 }} value={text} onChange={(e) => setText(e.target.value)} placeholder="הודעה..." />
         <button type="submit">שליחה</button>
       </form>
