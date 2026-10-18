@@ -6,11 +6,15 @@ import MealsListPage from './pages/MealsListPage';
 import NewMealPage from './pages/NewMealPage';
 import MealDetailsPage from './pages/MealDetailsPage';
 import UsersAdminPage from './pages/UsersAdminPage';
+import ForgotPasswordPage from './pages/ForgotPasswordPage';
+import ResetPasswordPage from './pages/ResetPasswordPage';
 
 export default function App() {
   return (
     <Routes>
       <Route path="/login" element={<LoginPage />} />
+      <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+      <Route path="/reset-password" element={<ResetPasswordPage />} />
       {/* כל המסכים שבתוך Layout דורשים התחברות */}
       <Route element={<Layout />}>
         <Route path="/" element={<HomePage />} />

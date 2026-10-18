@@ -25,6 +25,7 @@ export default function MealDetailsPage() {
   const [conflict, setConflict] = useState('');
   const [success, setSuccess] = useState('');
   const [participantEmail, setParticipantEmail] = useState('');
+  const [editForm, setEditForm] = useState(null); // null: לא בעריכה
 
   const loadMeal = useCallback(() => {
     return api.get(`/api/meals/${mealId}`)
@@ -129,6 +130,50 @@ export default function MealDetailsPage() {
     }
   }
 
+  // עריכת פרטי הארוחה: בעלת הארוחה או משתתפת עם הרשאת עריכה
+  function startEditing() {
+    setEditForm({ name: meal.name, eventDate: toLocalInput(meal.eventDate), guestsCount: meal.guestsCount });
+  }
+
+  async function handleSaveDetails(e) {
+    e.preventDefault();
+    clearMessages();
+    try {
+      await api.patch(`/api/meals/${mealId}`, {
+        name: editForm.name,
+        eventDate: new Date(editForm.eventDate).toISOString(), // השרת עובד ב-UTC
+        guestsCount: Number(editForm.guestsCount),
+      });
+      setEditForm(null);
+      setSuccess('פרטי הארוחה עודכנו');
+      await Promise.all([loadMeal(), loadMealDishes()]);
+    } catch (err) {
+      setError(getErrorMessage(err));
+    }
+  }
+
+  // בעלת הארוחה נותנת או מבטלת הרשאת עריכה למשתתפת
+  async function handleToggleEditor(participant, canEdit) {
+    clearMessages();
+    // הסימון מתעדכן מיד במסך, ואחרי השמירה הנתונים נטענים מחדש מהשרת
+    setMeal((current) => ({
+      ...current,
+      editorIds: canEdit
+        ? [...current.editorIds, participant.id]
+        : current.editorIds.filter((id) => id !== participant.id),
+    }));
+    try {
+      if (canEdit) await api.put(`/api/meals/${mealId}/editors/${participant.id}`);
+      else await api.delete(`/api/meals/${mealId}/editors/${participant.id}`);
+      setSuccess(canEdit
+        ? `${participant.fullName} יכולה עכשיו לערוך את הארוחה`
+        : `ההרשאה של ${participant.fullName} לערוך את הארוחה בוטלה`);
+    } catch (err) {
+      setError(getErrorMessage(err));
+    }
+    await loadMeal();
+  }
+
   // מחיקת הארוחה כולה: בעלת הארוחה או מנהלת המערכת
   async function handleDeleteMeal() {
     const confirmed = window.confirm(
@@ -167,19 +212,72 @@ export default function MealDetailsPage() {
         <div className="card meal-header">
           <div className="meal-title">
             <h1>{meal.name}</h1>
-            {(meal.isOwner || currentUser?.role === 'Admin') && (
-              <button className="small danger" onClick={handleDeleteMeal}>🗑 מחיקת הארוחה</button>
-            )}
+            <div className="row" style={{ marginBottom: 0 }}>
+              {meal.canEdit && !editForm && (
+                <button className="small" onClick={startEditing}>✎ עריכת פרטים</button>
+              )}
+              {(meal.isOwner || currentUser?.role === 'Admin') && (
+                <button className="small danger" onClick={handleDeleteMeal}>🗑 מחיקת הארוחה</button>
+              )}
+            </div>
           </div>
+          {editForm && (
+            <form className="edit-meal" onSubmit={handleSaveDetails}>
+              <label>
+                שם הארוחה
+                <input value={editForm.name} maxLength={100} required
+                  onChange={(e) => setEditForm({ ...editForm, name: e.target.value })} />
+              </label>
+              <label>
+                תאריך ושעה
+                <input type="datetime-local" value={editForm.eventDate} required
+                  onChange={(e) => setEditForm({ ...editForm, eventDate: e.target.value })} />
+              </label>
+              <label>
+                מספר אורחים
+                <input type="number" min="1" max="1000" value={editForm.guestsCount} required
+                  onChange={(e) => setEditForm({ ...editForm, guestsCount: e.target.value })} />
+              </label>
+              <div className="row">
+                <button type="submit">שמירה</button>
+                <button type="button" onClick={() => setEditForm(null)}>ביטול</button>
+              </div>
+            </form>
+          )}
           <div className="meal-meta">
             <span className={`badge ${meal.mealType}`}>ארוחה {mealTypes[meal.mealType]}</span>
             <span>📅 <b>{formatDate(meal.eventDate)}</b></span>
             <span>👥 <b>{meal.guestsCount}</b> אורחים</span>
             <span>בעלת הארוחה: <b>{meal.ownerName}</b></span>
           </div>
-          <p className="muted" style={{ marginTop: 10, marginBottom: 0 }}>
-            משתתפות: {meal.participants.map((p) => p.fullName).join(', ') || 'אין עדיין'}
-          </p>
+          <div className="participants">
+            <span className="muted">משתתפות:</span>
+            {meal.participants.length === 0 && <span className="muted">אין עדיין</span>}
+            <ul className="chips">
+              {meal.participants.map((p) => {
+                const isEditor = meal.editorIds.includes(p.id);
+                return (
+                  <li key={p.id} className={isEditor ? 'editor' : ''}>
+                    {p.fullName}
+                    {meal.isOwner ? (
+                      <label className="edit-toggle" title="הרשאה לערוך את הארוחה">
+                        <input type="checkbox" checked={isEditor} onChange={() => handleToggleEditor(p, !isEditor)} />
+                        עורכת
+                      </label>
+                    ) : (
+                      isEditor && <span className="editor-mark">✎ עורכת</span>
+                    )}
+                  </li>
+                );
+              })}
+            </ul>
+          </div>
+          {meal.isOwner && meal.participants.length > 0 && (
+            <p className="muted hint">סמני "עורכת" כדי לתת למשתתפת הרשאה לערוך את הפרטים, המנות וההזמנות.</p>
+          )}
+          {meal.canEdit && !meal.isOwner && (
+            <p className="editor-note">✎ יש לך הרשאת עריכה בארוחה הזו</p>
+          )}
           {meal.pendingEmails?.length > 0 && (
             <p className="muted" style={{ marginBottom: 0 }}>
               הוזמנו וממתינות להרשמה: {meal.pendingEmails.join(', ')}
@@ -227,7 +325,7 @@ export default function MealDetailsPage() {
                   mealType={meal.mealType}
                   dishes={dishes}
                   currentUserId={currentUserId}
-                  isOwner={meal.isOwner}
+                  canEdit={meal.canEdit}
                   onTake={handleTake}
                   onCancel={handleCancel}
                   onRemove={handleRemoveDish}
@@ -237,7 +335,7 @@ export default function MealDetailsPage() {
           </table>
         </div>
 
-        {meal.isOwner && (
+        {meal.canEdit && (
           <>
             <div className="card">
               <h3>הוספת מאכלים</h3>
@@ -261,4 +359,11 @@ export default function MealDetailsPage() {
       </aside>
     </div>
   );
+}
+
+// תאריך מהשרת (UTC) לערך של שדה datetime-local בשעון המקומי
+function toLocalInput(iso) {
+  const d = new Date(iso);
+  const pad = (n) => String(n).padStart(2, '0');
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
 }

@@ -4,7 +4,7 @@ import { categories, fitsMeal, units } from '../labels';
 const FREE_CHOICE = 'free';
 
 // שורה בטבלת המנות: הנתונים, מי מכינה, וכפתור "אני מכינה" עם שדה כמות לפיצול
-export default function DishRow({ mealDish, mealType, dishes, currentUserId, isOwner, onTake, onCancel, onRemove }) {
+export default function DishRow({ mealDish, mealType, dishes, currentUserId, canEdit, onTake, onCancel, onRemove }) {
   const [quantity, setQuantity] = useState('');
   const [specifiedDishId, setSpecifiedDishId] = useState('');
   const [freeName, setFreeName] = useState('');
@@ -66,7 +66,7 @@ export default function DishRow({ mealDish, mealType, dishes, currentUserId, isO
             <button className="small primary" onClick={handleTake}>אני מכינה</button>
           </div>
         )}
-        {isOwner && (
+        {canEdit && (
           <button className="small danger" style={{ marginTop: 6 }} onClick={() => onRemove(mealDish.id)}>הסרת המנה</button>
         )}
       </td>

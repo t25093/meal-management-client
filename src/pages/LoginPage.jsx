@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useLocation, useNavigate } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import api from '../api/client';
 import { getErrorMessage } from '../api/errors';
 import { saveAuth } from '../auth';
@@ -57,6 +57,11 @@ export default function LoginPage() {
             <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} required />
           </label>
           <button type="submit">{isRegister ? 'הרשמה' : 'כניסה'}</button>
+          {!isRegister && (
+            <div className="auth-switch">
+              <Link to="/forgot-password">שכחתי סיסמה</Link>
+            </div>
+          )}
           <div className="auth-switch">
             <button type="button" className="link" onClick={() => { setIsRegister(!isRegister); setError(''); }}>
               {isRegister ? 'יש לי כבר חשבון: להתחברות' : 'אין לי חשבון: להרשמה'}

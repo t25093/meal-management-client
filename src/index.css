@@ -549,3 +549,44 @@ tbody tr:hover td { background: #fcfaf5; }
   .topbar { flex-wrap: wrap; }
   .topbar .user { flex-wrap: wrap; justify-content: flex-end; gap: 6px 8px; font-size: 13px; }
 }
+
+/* ===== הרשאת עריכה ועריכת פרטי הארוחה ===== */
+.participants { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-top: 12px; }
+.participants .chips { margin: 0; }
+.chips li.editor { background: #fbf3dc; color: #7a5b12; box-shadow: inset 0 0 0 1px #ecd9a6; }
+.edit-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin: 0;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.7);
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+}
+.edit-toggle input { width: auto; margin: 0; }
+.editor-mark { font-size: 12px; font-weight: 600; }
+.meal-header .hint { font-size: 13px; margin: 8px 0 0; }
+.editor-note {
+  display: inline-block;
+  margin: 10px 0 0;
+  padding: 4px 12px;
+  border-radius: 999px;
+  background: #fbf3dc;
+  color: #7a5b12;
+  font-size: 13px;
+  font-weight: 600;
+}
+.edit-meal {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 0 14px;
+  margin: 4px 0 12px;
+  padding: 14px;
+  border-radius: var(--radius-sm);
+  background: var(--bg);
+}
+.edit-meal .row { grid-column: 1 / -1; margin-bottom: 0; }
+
