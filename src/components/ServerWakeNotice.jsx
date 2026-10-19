@@ -1,9 +1,23 @@
-import { useSyncExternalStore } from 'react';
+import { useEffect, useState, useSyncExternalStore } from 'react';
 import { isServerSlow, subscribeServerSlow } from '../api/client';
 
-// הודעה בתחתית המסך כשבקשה לשרת מתעכבת, בדרך כלל כי השרת ב-Render מתעורר
+// אחרי כמה זמן של טעינה מוסיפים הסבר, כי כנראה השרת ב-Render מתעורר
+const LONG_WAIT_MS = 4000;
+
+// סימן "בטעינה…" בתחתית המסך כשבקשה לשרת מתעכבת יותר משנייה
 export default function ServerWakeNotice() {
   const slow = useSyncExternalStore(subscribeServerSlow, isServerSlow);
+  const [longWait, setLongWait] = useState(false);
+
+  useEffect(() => {
+    if (!slow) {
+      setLongWait(false);
+      return undefined;
+    }
+    const timer = setTimeout(() => setLongWait(true), LONG_WAIT_MS);
+    return () => clearTimeout(timer);
+  }, [slow]);
+
   if (!slow) return null;
 
   return (
@@ -11,7 +25,7 @@ export default function ServerWakeNotice() {
       <span className="server-wake-spinner" aria-hidden="true" />
       <div>
         <strong>בטעינה…</strong>
-        <div>זה יכול לקחת עד דקה. אין צורך לרענן את הדף.</div>
+        {longWait && <div>זה יכול לקחת עד דקה. אין צורך לרענן את הדף.</div>}
       </div>
     </div>
   );

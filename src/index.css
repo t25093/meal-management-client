@@ -624,3 +624,8 @@ tbody tr:hover td { background: #fcfaf5; }
 @keyframes server-wake-spin {
   to { transform: rotate(360deg); }
 }
+
+/* ===== הוספת משתתפות: אחת או רשימה ===== */
+.invite-form .row { margin-bottom: 0; align-items: stretch; }
+.invite-form textarea { flex: 1; min-width: 200px; }
+.invite-preview { margin: 8px 0 0; overflow-wrap: anywhere; }

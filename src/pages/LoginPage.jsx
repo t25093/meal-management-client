@@ -3,6 +3,7 @@ import { Link, useLocation, useNavigate } from 'react-router-dom';
 import api from '../api/client';
 import { getErrorMessage } from '../api/errors';
 import { saveAuth } from '../auth';
+import { cleanEmail } from '../emailList';
 import Logo from '../components/Logo';
 
 // מסך אחד להתחברות ולהרשמה
@@ -50,7 +51,7 @@ export default function LoginPage() {
           )}
           <label>
             אימייל
-            <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} required />
+            <input type="email" value={email} onChange={(e) => setEmail(cleanEmail(e.target.value))} required />
           </label>
           <label>
             סיסמה

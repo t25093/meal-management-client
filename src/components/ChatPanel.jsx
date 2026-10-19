@@ -35,7 +35,7 @@ export default function ChatPanel({ mealId }) {
     async function poll() {
       try {
         const params = lastIdRef.current ? { afterId: lastIdRef.current } : {};
-        const response = await api.get(`/api/meals/${mealId}/messages`, { params });
+        const response = await api.get(`/api/meals/${mealId}/messages`, { params, background: true });
         if (!stopped) {
           addMessages(response.data);
           setError('');

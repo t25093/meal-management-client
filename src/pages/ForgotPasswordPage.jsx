@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import api from '../api/client';
 import { getErrorMessage } from '../api/errors';
+import { cleanEmail } from '../emailList';
 import Logo from '../components/Logo';
 
 // בקשת קישור לאיפוס סיסמה במייל
@@ -40,7 +41,7 @@ export default function ForgotPasswordPage() {
               <p className="muted">נשלח אלייך מייל עם קישור לבחירת סיסמה חדשה.</p>
               <label>
                 אימייל
-                <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} required />
+                <input type="email" value={email} onChange={(e) => setEmail(cleanEmail(e.target.value))} required />
               </label>
               <button type="submit">שליחת קישור</button>
             </>

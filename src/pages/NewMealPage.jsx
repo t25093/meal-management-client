@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import api from '../api/client';
 import { loadAllDishes } from '../api/dishes';
 import { getErrorMessage } from '../api/errors';
+import { extractEmails } from '../emailList';
 import { categories, fitsMeal, mealTypes } from '../labels';
 import MenuPicker from '../components/MenuPicker';
 import NewDishForm from '../components/NewDishForm';
@@ -31,11 +32,8 @@ export default function NewMealPage() {
       item.dishId === null || fitsMeal(dishes.find((d) => d.id === item.dishId), newType)));
   }
 
+  // אותו מאכל אפשר להוסיף כמה פעמים: כל הוספה היא מנה נפרדת בתפריט
   function addMenuItem(item) {
-    if (item.dishId !== null && menuItems.some((m) => m.dishId === item.dishId)) {
-      setError(`${item.name} כבר נמצא בתפריט`);
-      return;
-    }
     setError('');
     setMenuItems([...menuItems, item]);
   }
@@ -70,8 +68,7 @@ export default function NewMealPage() {
 
       // הוספת המשתתפות אחת אחת. אימייל שלא רשום נשמר כהזמנה, ושגיאה לא מבטלת את הארוחה.
       const failed = [];
-      const list = emails.split(/[\s,;]+/).filter((x) => x);
-      for (const email of list) {
+      for (const email of extractEmails(emails)) {
         try {
           await api.post(`/api/meals/${mealId}/participants`, { email });
         } catch (err) {
@@ -155,7 +152,7 @@ export default function NewMealPage() {
         <div className="card">
           <h3>משתתפות</h3>
           <label>
-            אימיילים (אחד בכל שורה)
+            אימיילים (אחד בכל שורה, או רשימת נמענים שהודבקה מהמייל)
             <textarea rows="3" value={emails} onChange={(e) => setEmails(e.target.value)} />
           </label>
           <button type="submit">יצירת הארוחה</button>

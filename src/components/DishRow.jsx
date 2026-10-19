@@ -4,7 +4,7 @@ import { categories, fitsMeal, units } from '../labels';
 const FREE_CHOICE = 'free';
 
 // שורה בטבלת המנות: הנתונים, מי מכינה, וכפתור "אני מכינה" עם שדה כמות לפיצול
-export default function DishRow({ mealDish, mealType, dishes, currentUserId, canEdit, onTake, onCancel, onRemove }) {
+export default function DishRow({ mealDish, copyNumber, mealType, dishes, currentUserId, canEdit, onTake, onCancel, onRemove }) {
   const [quantity, setQuantity] = useState('');
   const [specifiedDishId, setSpecifiedDishId] = useState('');
   const [freeName, setFreeName] = useState('');
@@ -27,7 +27,10 @@ export default function DishRow({ mealDish, mealType, dishes, currentUserId, can
   return (
     <tr className={mealDish.isFullyAssigned ? 'full' : ''}>
       <td>{categories[mealDish.category]}</td>
-      <td>{isUndefined ? <i className="muted">ללא בחירה</i> : <b>{mealDish.dishName}</b>}</td>
+      <td>
+        {isUndefined ? <i className="muted">ללא בחירה</i> : <b>{mealDish.dishName}</b>}
+        {copyNumber && <span className="muted"> ({copyNumber})</span>}
+      </td>
       <td>{mealDish.requiredQuantity ?? '-'} {unit}</td>
       <td>{mealDish.assignedQuantity}</td>
       <td>{mealDish.remainingQuantity ?? '-'}</td>

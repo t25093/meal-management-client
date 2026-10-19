@@ -6,10 +6,10 @@ const api = axios.create({
   baseURL: import.meta.env.VITE_API_URL,
 });
 
-// ===== שרת שמתעורר =====
-// ב-Render השרת החינמי נרדם אחרי 15 דקות בלי בקשות, וההתעוררות לוקחת כדקה.
-// בקשה שמתעכבת יותר מכמה שניות מציגה הודעה (ServerWakeNotice) עד שהשרת עונה.
-const SLOW_REQUEST_MS = 3000;
+// ===== סימן טעינה =====
+// בקשה שמתעכבת יותר משנייה מציגה "בטעינה…" (ServerWakeNotice) עד שהשרת עונה.
+// ב-Render השרת החינמי נרדם אחרי 15 דקות בלי בקשות, ואז ההתעוררות לוקחת כדקה.
+const SLOW_REQUEST_MS = 1000;
 let slowRequests = 0;
 const slowListeners = new Set();
 
@@ -56,7 +56,10 @@ api.interceptors.request.use((config) => {
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;
   }
-  config.finishSlowTimer = startSlowTimer();
+  // בקשות רקע (כמו משיכת הודעות הצ'אט) לא מציגות "בטעינה"
+  if (!config.background) {
+    config.finishSlowTimer = startSlowTimer();
+  }
   return config;
 });
 

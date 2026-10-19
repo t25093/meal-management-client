@@ -1,15 +1,18 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import api from '../api/client';
 import { loadAllDishes } from '../api/dishes';
 import { getErrorMessage, isConflict } from '../api/errors';
 import { getUser } from '../auth';
+import { extractEmails } from '../emailList';
 import { fitsMeal, formatDate, mealTypes } from '../labels';
 import DishRow from '../components/DishRow';
 import MenuPicker from '../components/MenuPicker';
 import NewDishForm from '../components/NewDishForm';
 import ChatPanel from '../components/ChatPanel';
 import RecipesPanel from '../components/RecipesPanel';
+
+const REFRESH_MS = 10000;
 
 export default function MealDetailsPage() {
   const { mealId } = useParams();
@@ -25,23 +28,41 @@ export default function MealDetailsPage() {
   const [conflict, setConflict] = useState('');
   const [success, setSuccess] = useState('');
   const [participantEmail, setParticipantEmail] = useState('');
+  const [inviting, setInviting] = useState(false);
   const [editForm, setEditForm] = useState(null); // null: לא בעריכה
 
-  const loadMeal = useCallback(() => {
-    return api.get(`/api/meals/${mealId}`)
-      .then((response) => setMeal(response.data))
-      .catch((err) => setError(getErrorMessage(err)));
+  // מספור הטעינות: תשובה של טעינה ישנה (למשל רענון ברקע) לא דורסת תשובה חדשה יותר
+  const mealLoads = useRef(0);
+  const dishLoads = useRef(0);
+
+  // background: רענון אוטומטי, בלי סימן טעינה ובלי הודעת שגיאה
+  const loadMeal = useCallback((background = false) => {
+    const load = ++mealLoads.current;
+    return api.get(`/api/meals/${mealId}`, { background })
+      .then((response) => { if (load === mealLoads.current) setMeal(response.data); })
+      .catch((err) => { if (!background) setError(getErrorMessage(err)); });
   }, [mealId]);
 
-  const loadMealDishes = useCallback(() => {
-    return api.get(`/api/meals/${mealId}/dishes`, { params: { status } })
-      .then((response) => setMealDishes(response.data))
-      .catch((err) => setError(getErrorMessage(err)));
+  const loadMealDishes = useCallback((background = false) => {
+    const load = ++dishLoads.current;
+    return api.get(`/api/meals/${mealId}/dishes`, { params: { status }, background })
+      .then((response) => { if (load === dishLoads.current) setMealDishes(response.data); })
+      .catch((err) => { if (!background) setError(getErrorMessage(err)); });
   }, [mealId, status]);
 
   useEffect(() => { loadMeal(); }, [loadMeal]);
   useEffect(() => { loadMealDishes(); }, [loadMealDishes]);
   useEffect(() => { loadAllDishes().then(setDishes).catch(() => {}); }, []);
+
+  // שינויים של משתתפות אחרות מופיעים לבד, בלי ללחוץ "רענון"
+  useEffect(() => {
+    const timer = setInterval(() => {
+      if (document.hidden) return;
+      loadMeal(true);
+      loadMealDishes(true);
+    }, REFRESH_MS);
+    return () => clearInterval(timer);
+  }, [loadMeal, loadMealDishes]);
 
   function clearMessages() {
     setError('');
@@ -189,22 +210,72 @@ export default function MealDetailsPage() {
     }
   }
 
-  async function handleAddParticipant(e) {
+  async function handleAddParticipants(e) {
     e.preventDefault();
     clearMessages();
-    try {
-      const response = await api.post(`/api/meals/${mealId}/participants`, { email: participantEmail });
+    const emails = extractEmails(participantEmail);
+    if (emails.length === 0) {
+      setError('לא נמצאה כתובת אימייל תקינה');
+      return;
+    }
+
+    // אחת אחרי השנייה, כמו ביצירת ארוחה. שגיאה באחת לא עוצרת את האחרות.
+    setInviting(true);
+    const added = [];
+    const invited = [];
+    const failed = [];
+    let lastMessage = '';
+    for (const email of emails) {
+      try {
+        const response = await api.post(`/api/meals/${mealId}/participants`, { email });
+        (response.data.isPending ? invited : added).push(email);
+        lastMessage = response.data.message;
+      } catch (err) {
+        failed.push({ email, message: getErrorMessage(err) });
+      }
+    }
+    setInviting(false);
+
+    if (emails.length === 1) {
+      if (failed.length) setError(failed[0].message);
+      else setSuccess(lastMessage);
+    } else {
+      const lines = [];
+      if (added.length) lines.push(`נוספו לארוחה: ${added.join(', ')}`);
+      if (invited.length) lines.push(`עוד לא רשומות, ונשמרה להן הזמנה: ${invited.join(', ')}`);
+      setSuccess(lines.join('. '));
+      if (failed.length) setError(`לא נוספו: ${failed.map((f) => `${f.email} (${f.message})`).join(', ')}`);
+    }
+
+    if (added.length || invited.length) {
       setParticipantEmail('');
-      setSuccess(response.data.message);
       await loadMeal();
-    } catch (err) {
-      setError(getErrorMessage(err));
+    }
+  }
+
+  // Enter שולח, ו-Shift+Enter יורד שורה
+  function handleInviteKeyDown(e) {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      e.currentTarget.form.requestSubmit();
     }
   }
 
   if (!meal) {
     return error ? <div className="error">{error}</div> : <p className="muted">טוען...</p>;
   }
+
+  // מאכל שמופיע כמה פעמים בתפריט מקבל מספר ליד השם: (1), (2)...
+  const copyNumbers = new Map();
+  for (const md of mealDishes) {
+    if (md.dishId === null) continue;
+    const copies = mealDishes.filter((other) => other.dishId === md.dishId);
+    if (copies.length > 1) copyNumbers.set(md.id, copies.indexOf(md) + 1);
+  }
+
+  // הכתובות שיוזמנו. מוצגות מתחת לשדה כשהודבקה רשימה ולא כתובת אחת נקייה.
+  const invitees = extractEmails(participantEmail);
+  const showInvitees = invitees.length > 0 && participantEmail.trim().toLowerCase() !== invitees[0];
 
   return (
     <div className="layout">
@@ -322,6 +393,7 @@ export default function MealDetailsPage() {
                 <DishRow
                   key={md.id}
                   mealDish={md}
+                  copyNumber={copyNumbers.get(md.id)}
                   mealType={meal.mealType}
                   dishes={dishes}
                   currentUserId={currentUserId}
@@ -342,11 +414,17 @@ export default function MealDetailsPage() {
               <MenuPicker dishes={dishes} mealType={meal.mealType} onAdd={handleAddDish} />
             </div>
             <NewDishForm defaultKashrut={meal.mealType} onCreated={handleDishCreated} />
-            <form className="card row" onSubmit={handleAddParticipant}>
-              <h3 style={{ margin: 0 }}>הוספת משתתפת</h3>
-              <input type="email" placeholder="אימייל" style={{ flex: 1, minWidth: 200 }} value={participantEmail}
-                onChange={(e) => setParticipantEmail(e.target.value)} required />
-              <button type="submit">הוספה</button>
+            <form className="card invite-form" onSubmit={handleAddParticipants}>
+              <h3>הוספת משתתפות</h3>
+              <div className="row">
+                <textarea rows="2" placeholder="אימייל אחד או כמה. אפשר להדביק רשימת נמענים מהמייל"
+                  value={participantEmail} onChange={(e) => setParticipantEmail(e.target.value)}
+                  onKeyDown={handleInviteKeyDown} />
+                <button type="submit" disabled={inviting}>
+                  {inviting ? 'מוסיפים…' : invitees.length > 1 ? `הוספת ${invitees.length}` : 'הוספה'}
+                </button>
+              </div>
+              {showInvitees && <p className="muted invite-preview">יתווספו: <span dir="ltr">{invitees.join(', ')}</span></p>}
             </form>
           </>
         )}
