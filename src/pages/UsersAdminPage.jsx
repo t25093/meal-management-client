@@ -2,6 +2,8 @@ import { useCallback, useEffect, useState } from 'react';
 import api from '../api/client';
 import { getErrorMessage } from '../api/errors';
 import { getUser } from '../auth';
+import { initials } from '../theme';
+import Icon from '../components/Icon';
 
 const PAGE_SIZE = 10;
 const roles = { Admin: 'מנהלת', User: 'משתמשת' };
@@ -49,7 +51,12 @@ export default function UsersAdminPage() {
 
   return (
     <>
-      <h1>ניהול משתמשות</h1>
+      <div className="page-header">
+        <div>
+          <h1>ניהול משתמשות</h1>
+          <p>כל המשתמשות הרשומות במערכת{result ? ` · ${result.totalCount} בסך הכול` : ''}.</p>
+        </div>
+      </div>
       {error && <div className="error">{error}</div>}
       {success && <div className="success">{success}</div>}
       {result && (
@@ -67,12 +74,12 @@ export default function UsersAdminPage() {
               <tbody>
                 {result.items.map((user) => (
                   <tr key={user.id}>
-                    <td><b>{user.fullName}</b></td>
+                    <td><span className="cell-user"><span className="avatar sm">{initials(user.fullName)}</span><b>{user.fullName}</b></span></td>
                     <td>{user.email}</td>
-                    <td>{roles[user.role] ?? user.role}</td>
+                    <td><span className={`pill ${user.role === 'Admin' ? 'primary' : ''}`}>{roles[user.role] ?? user.role}</span></td>
                     <td>
                       {user.role !== 'Admin' && (
-                        <button className="small danger" onClick={() => handleDelete(user)}>מחיקה</button>
+                        <button className="small danger" onClick={() => handleDelete(user)}><Icon name="trash" size={15} /> מחיקה</button>
                       )}
                     </td>
                   </tr>
@@ -80,13 +87,15 @@ export default function UsersAdminPage() {
               </tbody>
             </table>
           </div>
-          <div className="row pager">
-            <button disabled={page <= 1} onClick={() => setPage(page - 1)}>הקודם</button>
-            <span>
-              עמוד {result.page} מתוך {Math.max(result.totalPages, 1)} ({result.totalCount} משתמשות)
-            </span>
-            <button disabled={page >= result.totalPages} onClick={() => setPage(page + 1)}>הבא</button>
-          </div>
+          {result.totalPages > 1 && (
+            <div className="pager">
+              <span>עמוד {result.page} מתוך {result.totalPages}</span>
+              <div className="pager-btns">
+                <button disabled={page <= 1} onClick={() => setPage(page - 1)}><Icon name="chevronRight" size={16} /> הקודם</button>
+                <button disabled={page >= result.totalPages} onClick={() => setPage(page + 1)}>הבא <Icon name="chevronLeft" size={16} /></button>
+              </div>
+            </div>
+          )}
         </>
       )}
     </>

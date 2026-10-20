@@ -102,7 +102,12 @@ export default function NewMealPage() {
 
   return (
     <>
-      <h1>הוספת ארוחה</h1>
+      <div className="page-header">
+        <div>
+          <h1>ארוחה חדשה</h1>
+          <p>פרטים, תפריט והזמנת משתתפות. אפשר לשנות הכול גם אחר כך.</p>
+        </div>
+      </div>
       {error && <div className="error">{error}</div>}
       <form onSubmit={handleSubmit}>
         <div className="card">
@@ -155,7 +160,7 @@ export default function NewMealPage() {
             אימיילים (אחד בכל שורה, או רשימת נמענים שהודבקה מהמייל)
             <textarea rows="3" value={emails} onChange={(e) => setEmails(e.target.value)} />
           </label>
-          <button type="submit">יצירת הארוחה</button>
+          <button type="submit" className="lg">יצירת הארוחה</button>
         </div>
       </form>
 
