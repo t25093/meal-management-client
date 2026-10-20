@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import api from '../api/client';
 import { getErrorMessage } from '../api/errors';
-import Logo from '../components/Logo';
+import AuthShell from '../components/AuthShell';
 
 // בחירת סיסמה חדשה מהקישור שנשלח במייל (?token=...)
 export default function ResetPasswordPage() {
@@ -28,12 +28,7 @@ export default function ResetPasswordPage() {
   }
 
   return (
-    <div className="auth-screen">
-      <div className="auth-box">
-        <div className="auth-brand">
-          <Logo size={72} />
-          <h2>מנה-לי</h2>
-        </div>
+    <AuthShell>
         <form className="card" onSubmit={handleSubmit}>
           <h1>בחירת סיסמה חדשה</h1>
           {!token ? (
@@ -58,7 +53,6 @@ export default function ResetPasswordPage() {
             <Link to="/login">חזרה להתחברות</Link>
           </div>
         </form>
-      </div>
-    </div>
+    </AuthShell>
   );
 }

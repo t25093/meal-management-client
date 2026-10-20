@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import api from '../api/client';
 import { getErrorMessage } from '../api/errors';
 import { cleanEmail } from '../emailList';
-import Logo from '../components/Logo';
+import AuthShell from '../components/AuthShell';
 
 // בקשת קישור לאיפוס סיסמה במייל
 export default function ForgotPasswordPage() {
@@ -23,12 +23,7 @@ export default function ForgotPasswordPage() {
   }
 
   return (
-    <div className="auth-screen">
-      <div className="auth-box">
-        <div className="auth-brand">
-          <Logo size={72} />
-          <h2>מנה-לי</h2>
-        </div>
+    <AuthShell>
         <form className="card" onSubmit={handleSubmit}>
           <h1>שכחתי סיסמה</h1>
           {error && <div className="error">{error}</div>}
@@ -50,7 +45,6 @@ export default function ForgotPasswordPage() {
             <Link to="/login">חזרה להתחברות</Link>
           </div>
         </form>
-      </div>
-    </div>
+    </AuthShell>
   );
 }
