@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import api from '../api/client';
 import { getErrorMessage } from '../api/errors';
 import { getUser } from '../auth';
@@ -10,6 +11,7 @@ const roles = { Admin: 'מנהלת', User: 'משתמשת' };
 
 // ניהול משתמשות: למנהלת המערכת בלבד (השרת בודק זאת גם הוא)
 export default function UsersAdminPage() {
+  const navigate = useNavigate();
   const isAdmin = getUser()?.role === 'Admin';
   const [page, setPage] = useState(1);
   const [result, setResult] = useState(null);
@@ -54,7 +56,7 @@ export default function UsersAdminPage() {
       <div className="page-header">
         <div>
           <h1>ניהול משתמשות</h1>
-          <p>כל המשתמשות הרשומות במערכת{result ? ` · ${result.totalCount} בסך הכול` : ''}.</p>
+          <p>כל המשתמשות הרשומות במערכת{result ? ` · ${result.totalCount} בסך הכול` : ''}. לחיצה על משתמשת מציגה את הארוחות שלה.</p>
         </div>
       </div>
       {error && <div className="error">{error}</div>}
@@ -73,14 +75,21 @@ export default function UsersAdminPage() {
               </thead>
               <tbody>
                 {result.items.map((user) => (
-                  <tr key={user.id}>
+                  <tr key={user.id} className="clickable" onClick={() => navigate(`/admin/users/${user.id}`)}>
                     <td><span className="cell-user"><span className="avatar sm">{initials(user.fullName)}</span><b>{user.fullName}</b></span></td>
                     <td>{user.email}</td>
                     <td><span className={`pill ${user.role === 'Admin' ? 'primary' : ''}`}>{roles[user.role] ?? user.role}</span></td>
                     <td>
-                      {user.role !== 'Admin' && (
-                        <button className="small danger" onClick={() => handleDelete(user)}><Icon name="trash" size={15} /> מחיקה</button>
-                      )}
+                      <div className="row-actions">
+                        <button className="small" onClick={(e) => { e.stopPropagation(); navigate(`/admin/users/${user.id}`); }}>
+                          פרטים <Icon name="chevronLeft" size={15} />
+                        </button>
+                        {user.role !== 'Admin' && (
+                          <button className="small danger" onClick={(e) => { e.stopPropagation(); handleDelete(user); }}>
+                            <Icon name="trash" size={15} /> מחיקה
+                          </button>
+                        )}
+                      </div>
                     </td>
                   </tr>
                 ))}

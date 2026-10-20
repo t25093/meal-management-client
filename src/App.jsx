@@ -8,6 +8,7 @@ import NewMealPage from './pages/NewMealPage';
 import MealDetailsPage from './pages/MealDetailsPage';
 import UsersAdminPage from './pages/UsersAdminPage';
 import ProfilePage from './pages/ProfilePage';
+import UserDetailsPage from './pages/UserDetailsPage';
 import ForgotPasswordPage from './pages/ForgotPasswordPage';
 import ResetPasswordPage from './pages/ResetPasswordPage';
 
@@ -26,6 +27,7 @@ export default function App() {
           <Route path="/meals/new" element={<NewMealPage />} />
           <Route path="/meals/:mealId" element={<MealDetailsPage />} />
           <Route path="/admin/users" element={<UsersAdminPage />} />
+          <Route path="/admin/users/:userId" element={<UserDetailsPage />} />
           <Route path="/profile" element={<ProfilePage />} />
         </Route>
         <Route path="*" element={<Navigate to="/" replace />} />
