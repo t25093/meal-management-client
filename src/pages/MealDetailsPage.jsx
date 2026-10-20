@@ -5,7 +5,9 @@ import { loadAllDishes } from '../api/dishes';
 import { getErrorMessage, isConflict } from '../api/errors';
 import { getUser } from '../auth';
 import { extractEmails } from '../emailList';
-import { fitsMeal, formatDate, mealTypes } from '../labels';
+import { categories, fitsMeal, mealTypes } from '../labels';
+import { initials } from '../theme';
+import Icon from '../components/Icon';
 import DishRow from '../components/DishRow';
 import MenuPicker from '../components/MenuPicker';
 import NewDishForm from '../components/NewDishForm';
@@ -30,6 +32,7 @@ export default function MealDetailsPage() {
   const [participantEmail, setParticipantEmail] = useState('');
   const [inviting, setInviting] = useState(false);
   const [editForm, setEditForm] = useState(null); // null: לא בעריכה
+  const [tab, setTab] = useState('dishes'); // dishes | people | add
 
   // מספור הטעינות: תשובה של טעינה ישנה (למשל רענון ברקע) לא דורסת תשובה חדשה יותר
   const mealLoads = useRef(0);
@@ -262,7 +265,12 @@ export default function MealDetailsPage() {
   }
 
   if (!meal) {
-    return error ? <div className="error">{error}</div> : <p className="muted">טוען...</p>;
+    return error ? <div className="error">{error}</div> : (
+      <div style={{ display: 'grid', gap: 16 }}>
+        <div className="skeleton" style={{ height: 210 }} />
+        <div className="skeleton" style={{ height: 320 }} />
+      </div>
+    );
   }
 
   // מאכל שמופיע כמה פעמים בתפריט מקבל מספר ליד השם: (1), (2)...
@@ -277,165 +285,253 @@ export default function MealDetailsPage() {
   const invitees = extractEmails(participantEmail);
   const showInvitees = invitees.length > 0 && participantEmail.trim().toLowerCase() !== invitees[0];
 
+  // סיכום התפריט כולו (גם כשמסננים ל"פתוחות בלבד")
+  const allItems = meal.menuItems ?? [];
+  const doneCount = allItems.filter((m) => m.isFullyAssigned).length;
+  const openCount = allItems.length - doneCount;
+  const donePct = allItems.length ? Math.round((doneCount / allItems.length) * 100) : 0;
+  const myCount = allItems.filter((m) => m.assignments?.some((a) => a.userId === currentUserId)).length;
+
+  // כמה ימים נותרו לארוחה
+  const days = Math.ceil((new Date(meal.eventDate).setHours(0, 0, 0, 0) - new Date().setHours(0, 0, 0, 0)) / 86400000);
+  const when = days < 0 ? 'הארוחה עברה' : days === 0 ? 'היום!' : days === 1 ? 'מחר' : `בעוד ${days} ימים`;
+
+  // המנות מקובצות לפי סוג, בסדר הקבוע של הסוגים
+  const groups = Object.keys(categories)
+    .map((cat) => ({ cat, items: mealDishes.filter((md) => md.category === cat) }))
+    .filter((g) => g.items.length > 0);
+
+  const eventDate = new Date(meal.eventDate);
+  const peopleCount = meal.participants.length + (meal.pendingEmails?.length ?? 0);
+
   return (
-    <div className="layout">
-      <main>
-        <div className="card meal-header">
-          <div className="meal-title">
-            <h1>{meal.name}</h1>
-            <div className="row" style={{ marginBottom: 0 }}>
-              {meal.canEdit && !editForm && (
-                <button className="small" onClick={startEditing}>✎ עריכת פרטים</button>
-              )}
-              {(meal.isOwner || currentUser?.role === 'Admin') && (
-                <button className="small danger" onClick={handleDeleteMeal}>🗑 מחיקת הארוחה</button>
-              )}
-            </div>
+    <>
+      <section className="meal-hero">
+        <div className="mh-top">
+          <div className="mh-tags">
+            <span className={`badge on-hero ${meal.mealType}`}>ארוחה {mealTypes[meal.mealType]}</span>
+            <span className={`when ${days < 0 ? 'past' : ''}`}><Icon name="clock" size={14} /> {when}</span>
           </div>
-          {editForm && (
-            <form className="edit-meal" onSubmit={handleSaveDetails}>
-              <label>
-                שם הארוחה
-                <input value={editForm.name} maxLength={100} required
-                  onChange={(e) => setEditForm({ ...editForm, name: e.target.value })} />
-              </label>
-              <label>
-                תאריך ושעה
-                <input type="datetime-local" value={editForm.eventDate} required
-                  onChange={(e) => setEditForm({ ...editForm, eventDate: e.target.value })} />
-              </label>
-              <label>
-                מספר אורחים
-                <input type="number" min="1" max="1000" value={editForm.guestsCount} required
-                  onChange={(e) => setEditForm({ ...editForm, guestsCount: e.target.value })} />
-              </label>
-              <div className="row">
-                <button type="submit">שמירה</button>
-                <button type="button" onClick={() => setEditForm(null)}>ביטול</button>
-              </div>
-            </form>
-          )}
-          <div className="meal-meta">
-            <span className={`badge ${meal.mealType}`}>ארוחה {mealTypes[meal.mealType]}</span>
-            <span>📅 <b>{formatDate(meal.eventDate)}</b></span>
-            <span>👥 <b>{meal.guestsCount}</b> אורחים</span>
-            <span>בעלת הארוחה: <b>{meal.ownerName}</b></span>
+          <div className="mh-actions">
+            {meal.canEdit && !editForm && (
+              <button className="glass small" onClick={startEditing}><Icon name="edit" size={15} /> עריכת פרטים</button>
+            )}
+            {(meal.isOwner || currentUser?.role === 'Admin') && (
+              <button className="glass small danger-glass" onClick={handleDeleteMeal}><Icon name="trash" size={15} /> מחיקה</button>
+            )}
           </div>
-          <div className="participants">
-            <span className="muted">משתתפות:</span>
-            {meal.participants.length === 0 && <span className="muted">אין עדיין</span>}
-            <ul className="chips">
-              {meal.participants.map((p) => {
-                const isEditor = meal.editorIds.includes(p.id);
-                return (
-                  <li key={p.id} className={isEditor ? 'editor' : ''}>
-                    {p.fullName}
-                    {meal.isOwner ? (
-                      <label className="edit-toggle" title="הרשאה לערוך את הארוחה">
-                        <input type="checkbox" checked={isEditor} onChange={() => handleToggleEditor(p, !isEditor)} />
-                        עורכת
-                      </label>
-                    ) : (
-                      isEditor && <span className="editor-mark">✎ עורכת</span>
-                    )}
-                  </li>
-                );
-              })}
-            </ul>
-          </div>
-          {meal.isOwner && meal.participants.length > 0 && (
-            <p className="muted hint">סמני "עורכת" כדי לתת למשתתפת הרשאה לערוך את הפרטים, המנות וההזמנות.</p>
-          )}
-          {meal.canEdit && !meal.isOwner && (
-            <p className="editor-note">✎ יש לך הרשאת עריכה בארוחה הזו</p>
-          )}
-          {meal.pendingEmails?.length > 0 && (
-            <p className="muted" style={{ marginBottom: 0 }}>
-              הוזמנו וממתינות להרשמה: {meal.pendingEmails.join(', ')}
-            </p>
-          )}
         </div>
 
-        {conflict && <div className="conflict">{conflict}</div>}
-        {error && <div className="error">{error}</div>}
-        {success && <div className="success">{success}</div>}
+        <h1>{meal.name}</h1>
+        <div className="mh-meta">
+          <span><Icon name="calendar" size={17} /> {eventDate.toLocaleDateString('he-IL', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}</span>
+          <span><Icon name="clock" size={17} /> {eventDate.toLocaleTimeString('he-IL', { hour: '2-digit', minute: '2-digit' })}</span>
+          <span><Icon name="guests" size={17} /> {meal.guestsCount} אורחים</span>
+          <span><Icon name="user" size={17} /> {meal.isOwner ? 'בבעלותך' : `בעלת הארוחה: ${meal.ownerName}`}</span>
+        </div>
 
-        <div className="toolbar">
-          <h3 style={{ margin: 0 }}>המנות בארוחה</h3>
+        <div className="mh-stats">
+          <div className="mh-progress">
+            <div className="mh-progress-head">
+              <span>התקדמות התפריט</span>
+              <b>{donePct}%</b>
+            </div>
+            <div className="progress"><div className="bar"><div className="fill" style={{ width: `${donePct}%` }} /></div></div>
+          </div>
+          <div className="mh-num"><b>{allItems.length}</b><span>מנות</span></div>
+          <div className="mh-num"><b>{doneCount}</b><span>הושלמו</span></div>
+          <div className="mh-num"><b>{openCount}</b><span>פתוחות</span></div>
+          <div className="mh-num"><b>{myCount}</b><span>שלי</span></div>
+        </div>
+      </section>
+
+      {editForm && (
+        <form className="card edit-card" onSubmit={handleSaveDetails}>
+          <h3>עריכת פרטי הארוחה</h3>
+          <div className="form-grid">
+            <label>
+              שם הארוחה
+              <input value={editForm.name} maxLength={100} required
+                onChange={(e) => setEditForm({ ...editForm, name: e.target.value })} />
+            </label>
+            <label>
+              תאריך ושעה
+              <input type="datetime-local" value={editForm.eventDate} required
+                onChange={(e) => setEditForm({ ...editForm, eventDate: e.target.value })} />
+            </label>
+            <label>
+              מספר אורחים
+              <input type="number" min="1" max="1000" value={editForm.guestsCount} required
+                onChange={(e) => setEditForm({ ...editForm, guestsCount: e.target.value })} />
+            </label>
+          </div>
           <div className="row" style={{ marginBottom: 0 }}>
-            <span className="segmented">
-              <label>
-                <input type="radio" checked={status === 'all'} onChange={() => setStatus('all')} /> הכול
-              </label>
-              <label>
-                <input type="radio" checked={status === 'open'} onChange={() => setStatus('open')} /> פתוחות בלבד
-              </label>
-            </span>
-            <button className="small" onClick={() => { clearMessages(); loadMealDishes(); }}>⟳ רענון</button>
+            <button type="submit"><Icon name="check" size={16} /> שמירה</button>
+            <button type="button" className="ghost" onClick={() => setEditForm(null)}>ביטול</button>
           </div>
-        </div>
+        </form>
+      )}
 
-        <div className="table-wrap">
-          <table className="dishes-table">
-            <thead>
-              <tr>
-                <th>סוג</th>
-                <th>מאכל</th>
-                <th>נדרש</th>
-                <th>נלקח</th>
-                <th>נותר</th>
-                <th>מי מכינה</th>
-                <th></th>
-              </tr>
-            </thead>
-            <tbody>
-              {mealDishes.map((md) => (
-                <DishRow
-                  key={md.id}
-                  mealDish={md}
-                  copyNumber={copyNumbers.get(md.id)}
-                  mealType={meal.mealType}
-                  dishes={dishes}
-                  currentUserId={currentUserId}
-                  canEdit={meal.canEdit}
-                  onTake={handleTake}
-                  onCancel={handleCancel}
-                  onRemove={handleRemoveDish}
-                />
-              ))}
-            </tbody>
-          </table>
-        </div>
+      {conflict && <div className="conflict">{conflict}</div>}
+      {error && <div className="error">{error}</div>}
+      {success && <div className="success">{success}</div>}
 
-        {meal.canEdit && (
-          <>
-            <div className="card">
-              <h3>הוספת מאכלים</h3>
-              <MenuPicker dishes={dishes} mealType={meal.mealType} onAdd={handleAddDish} />
+      <div className="layout">
+        <main>
+          <div className="meal-tabs">
+            <div className="tabs" role="tablist">
+              <button role="tab" aria-selected={tab === 'dishes'} className={tab === 'dishes' ? 'active' : ''} onClick={() => setTab('dishes')}>
+                <Icon name="plate" size={17} /> המנות <span className="count">{allItems.length}</span>
+              </button>
+              <button role="tab" aria-selected={tab === 'people'} className={tab === 'people' ? 'active' : ''} onClick={() => setTab('people')}>
+                <Icon name="users" size={17} /> משתתפות <span className="count">{peopleCount}</span>
+              </button>
+              {meal.canEdit && (
+                <button role="tab" aria-selected={tab === 'add'} className={tab === 'add' ? 'active' : ''} onClick={() => setTab('add')}>
+                  <Icon name="plus" size={17} /> הוספת מאכלים
+                </button>
+              )}
             </div>
-            <NewDishForm defaultKashrut={meal.mealType} onCreated={handleDishCreated} />
-            <form className="card invite-form" onSubmit={handleAddParticipants}>
-              <h3>הוספת משתתפות</h3>
-              <div className="row">
-                <textarea rows="2" placeholder="אימייל אחד או כמה. אפשר להדביק רשימת נמענים מהמייל"
-                  value={participantEmail} onChange={(e) => setParticipantEmail(e.target.value)}
-                  onKeyDown={handleInviteKeyDown} />
-                <button type="submit" disabled={inviting}>
-                  {inviting ? 'מוסיפים…' : invitees.length > 1 ? `הוספת ${invitees.length}` : 'הוספה'}
+            {tab === 'dishes' && (
+              <div className="row" style={{ marginBottom: 0 }}>
+                <span className="segmented">
+                  <label>
+                    <input type="radio" checked={status === 'all'} onChange={() => setStatus('all')} /> הכול
+                  </label>
+                  <label>
+                    <input type="radio" checked={status === 'open'} onChange={() => setStatus('open')} /> פתוחות בלבד
+                  </label>
+                </span>
+                <button className="icon-btn bordered" onClick={() => { clearMessages(); loadMealDishes(); }} title="רענון" aria-label="רענון">
+                  <Icon name="refresh" size={17} />
                 </button>
               </div>
-              {showInvitees && <p className="muted invite-preview">יתווספו: <span dir="ltr">{invitees.join(', ')}</span></p>}
-            </form>
-          </>
-        )}
-      </main>
+            )}
+          </div>
 
-      {/* ב-RTL הרכיב השני ב-flex מוצג משמאל */}
-      <aside>
-        <ChatPanel mealId={mealId} />
-        <RecipesPanel mealId={mealId} meal={meal} currentUserId={currentUserId} />
-      </aside>
-    </div>
+          {tab === 'dishes' && (
+            <>
+              {groups.length === 0 && (
+                <div className="empty">
+                  <span className="empty-icon"><Icon name={status === 'open' ? 'check' : 'plate'} size={26} /></span>
+                  <b>{status === 'open' ? 'כל המנות נלקחו' : 'אין עדיין מנות בתפריט'}</b>
+                  <span>{status === 'open' ? 'אין מנות פתוחות. כל הכבוד!' : 'מנות שיתווספו לארוחה יופיעו כאן.'}</span>
+                  {meal.canEdit && status !== 'open' && (
+                    <button className="primary" onClick={() => setTab('add')}><Icon name="plus" size={16} /> הוספת מאכלים</button>
+                  )}
+                </div>
+              )}
+              {groups.map((g) => {
+                const done = g.items.filter((m) => m.isFullyAssigned).length;
+                return (
+                  <section key={g.cat} className="dish-group">
+                    <header>
+                      <h4>{categories[g.cat]}</h4>
+                      <span className="muted">{done} מתוך {g.items.length} הושלמו</span>
+                    </header>
+                    <div className="dish-list">
+                      {g.items.map((md) => (
+                        <DishRow
+                          key={md.id}
+                          mealDish={md}
+                          copyNumber={copyNumbers.get(md.id)}
+                          mealType={meal.mealType}
+                          dishes={dishes}
+                          currentUserId={currentUserId}
+                          canEdit={meal.canEdit}
+                          onTake={handleTake}
+                          onCancel={handleCancel}
+                          onRemove={handleRemoveDish}
+                        />
+                      ))}
+                    </div>
+                  </section>
+                );
+              })}
+            </>
+          )}
+
+          {tab === 'people' && (
+            <div className="card">
+              <div className="card-head">
+                <h3>המשתתפות בארוחה</h3>
+                {meal.isOwner && meal.participants.length > 0 && <span className="muted">סמני "עורכת" כדי לתת הרשאת עריכה</span>}
+              </div>
+              {meal.canEdit && !meal.isOwner && (
+                <p className="editor-note"><Icon name="check" size={14} /> יש לך הרשאת עריכה בארוחה הזו</p>
+              )}
+              <ul className="people">
+                <li>
+                  <span className="avatar">{initials(meal.ownerName)}</span>
+                  <span className="p-name"><b>{meal.ownerName}</b><small>בעלת הארוחה</small></span>
+                  <span className="pill primary">בעלים</span>
+                </li>
+                {meal.participants.map((p) => {
+                  const isEditor = meal.editorIds.includes(p.id);
+                  return (
+                    <li key={p.id}>
+                      <span className="avatar">{initials(p.fullName)}</span>
+                      <span className="p-name"><b>{p.fullName}</b><small dir="ltr">{p.email}</small></span>
+                      {meal.isOwner ? (
+                        <label className="switch" title="הרשאה לערוך את הארוחה">
+                          <input type="checkbox" checked={isEditor} onChange={() => handleToggleEditor(p, !isEditor)} />
+                          <span className="track" aria-hidden="true" />
+                          עורכת
+                        </label>
+                      ) : (
+                        isEditor && <span className="pill accent">עורכת</span>
+                      )}
+                    </li>
+                  );
+                })}
+                {meal.pendingEmails?.map((email) => (
+                  <li key={email} className="pending">
+                    <span className="avatar ghost"><Icon name="mail" size={18} /></span>
+                    <span className="p-name"><b dir="ltr">{email}</b><small>הוזמנה, עוד לא נרשמה</small></span>
+                    <span className="pill">ממתינה</span>
+                  </li>
+                ))}
+              </ul>
+              {meal.participants.length === 0 && !meal.pendingEmails?.length && (
+                <p className="muted" style={{ margin: '12px 0 0' }}>עוד לא הוזמנו משתתפות.</p>
+              )}
+
+              {meal.canEdit && (
+                <form className="invite-form" onSubmit={handleAddParticipants}>
+                  <h4>הזמנת משתתפות</h4>
+                  <div className="row">
+                    <textarea rows="2" placeholder="אימייל אחד או כמה. אפשר להדביק רשימת נמענים מהמייל"
+                      value={participantEmail} onChange={(e) => setParticipantEmail(e.target.value)}
+                      onKeyDown={handleInviteKeyDown} />
+                    <button type="submit" className={inviting ? 'loading' : ''} disabled={inviting}>
+                      <Icon name="mail" size={16} /> {invitees.length > 1 ? `הזמנת ${invitees.length}` : 'הזמנה'}
+                    </button>
+                  </div>
+                  {showInvitees && <p className="muted invite-preview">יוזמנו: <span dir="ltr">{invitees.join(', ')}</span></p>}
+                </form>
+              )}
+            </div>
+          )}
+
+          {tab === 'add' && meal.canEdit && (
+            <>
+              <div className="card">
+                <h3>מאכלים מהמאגר</h3>
+                <p className="card-sub">בוחרים מאכל לכל סוג, או "ללא בחירה" כדי שהמשתתפות יחליטו.</p>
+                <MenuPicker dishes={dishes} mealType={meal.mealType} onAdd={handleAddDish} />
+              </div>
+              <NewDishForm defaultKashrut={meal.mealType} onCreated={handleDishCreated} />
+            </>
+          )}
+        </main>
+
+        {/* ב-RTL הרכיב השני ב-flex מוצג משמאל */}
+        <aside>
+          <ChatPanel mealId={mealId} />
+          <RecipesPanel mealId={mealId} meal={meal} currentUserId={currentUserId} />
+        </aside>
+      </div>
+    </>
   );
 }
 

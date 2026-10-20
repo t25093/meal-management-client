@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import api from '../api/client';
 import { getErrorMessage } from '../api/errors';
+import Icon from './Icon';
 
 // אזור המתכונים שמתחת לצ'אט
 export default function RecipesPanel({ mealId, meal, currentUserId }) {
@@ -9,6 +10,8 @@ export default function RecipesPanel({ mealId, meal, currentUserId }) {
   const [title, setTitle] = useState('');
   const [content, setContent] = useState('');
   const [error, setError] = useState('');
+  const [formOpen, setFormOpen] = useState(false);
+  const [expanded, setExpanded] = useState(null);
 
   function loadRecipes() {
     api.get(`/api/meals/${mealId}/recipes`)
@@ -33,6 +36,7 @@ export default function RecipesPanel({ mealId, meal, currentUserId }) {
       setTitle('');
       setContent('');
       setDishId('');
+      setFormOpen(false);
       loadRecipes();
     } catch (err) {
       setError(getErrorMessage(err));
@@ -51,34 +55,60 @@ export default function RecipesPanel({ mealId, meal, currentUserId }) {
 
   return (
     <div className="card">
-      <h3>📖 מתכונים</h3>
+      <div className="card-head">
+        <h3>מתכונים</h3>
+        {!formOpen && (
+          <button className="small" onClick={() => setFormOpen(true)}><Icon name="plus" size={15} /> מתכון</button>
+        )}
+      </div>
       {error && <div className="error">{error}</div>}
-      {recipes.length === 0 && <p className="muted">אין מתכונים עדיין.</p>}
-      {recipes.map((r) => (
-        <div key={r.id} className="recipe">
-          <div className="recipe-head">
-            <div>
-              <b>{r.title}</b>{r.dishName && ` (${r.dishName})`}
-              <div className="muted">{r.authorName}</div>
-            </div>
-            {(r.authorId === currentUserId || meal.isOwner) && (
-              <button className="small danger" onClick={() => handleDelete(r.id)}>מחיקה</button>
-            )}
-          </div>
-          <div>{r.content}</div>
+      {recipes.length === 0 && !formOpen && (
+        <div className="mini-empty">
+          <Icon name="book" size={20} />
+          <span>אין מתכונים עדיין. אפשר לשתף מתכון למנה שמכינים.</span>
         </div>
-      ))}
-      <form className="recipe-form" onSubmit={handleAdd}>
-        <select value={dishId} onChange={(e) => setDishId(e.target.value)}>
-          <option value="">מתכון כללי</option>
-          {menuDishes.map((md) => (
-            <option key={md.id} value={md.dishId}>{md.dishName}</option>
-          ))}
-        </select>
-        <input placeholder="כותרת" value={title} onChange={(e) => setTitle(e.target.value)} required />
-        <textarea placeholder="המתכון" rows="4" value={content} onChange={(e) => setContent(e.target.value)} required />
-        <button type="submit">הוספת מתכון</button>
-      </form>
+      )}
+      <div className="recipes">
+        {recipes.map((r) => {
+          const open = expanded === r.id;
+          return (
+            <article key={r.id} className={`recipe ${open ? 'open' : ''}`}>
+              <div className="recipe-head">
+                <button className="recipe-toggle" onClick={() => setExpanded(open ? null : r.id)} aria-expanded={open}>
+                  <span className="r-icon"><Icon name="book" size={16} /></span>
+                  <span>
+                    <b>{r.title}</b>
+                    <small>{r.dishName ? `${r.dishName} · ` : ''}{r.authorName}</small>
+                  </span>
+                  <Icon name="chevronLeft" size={16} className="r-chev" />
+                </button>
+                {(r.authorId === currentUserId || meal.isOwner) && (
+                  <button className="icon-btn danger-hover" onClick={() => handleDelete(r.id)} title="מחיקה" aria-label={`מחיקת ${r.title}`}>
+                    <Icon name="trash" size={16} />
+                  </button>
+                )}
+              </div>
+              {open && <div className="recipe-body">{r.content}</div>}
+            </article>
+          );
+        })}
+      </div>
+      {formOpen && (
+        <form className="recipe-form" onSubmit={handleAdd}>
+          <select value={dishId} onChange={(e) => setDishId(e.target.value)} aria-label="למנה">
+            <option value="">מתכון כללי</option>
+            {menuDishes.map((md) => (
+              <option key={md.id} value={md.dishId}>{md.dishName}</option>
+            ))}
+          </select>
+          <input placeholder="שם המתכון" value={title} onChange={(e) => setTitle(e.target.value)} required />
+          <textarea placeholder="מצרכים ואופן ההכנה" rows="5" value={content} onChange={(e) => setContent(e.target.value)} required />
+          <div className="row" style={{ marginBottom: 0 }}>
+            <button type="submit"><Icon name="check" size={16} /> שמירת המתכון</button>
+            <button type="button" className="ghost" onClick={() => setFormOpen(false)}>ביטול</button>
+          </div>
+        </form>
+      )}
     </div>
   );
 }
