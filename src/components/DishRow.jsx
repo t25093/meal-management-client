@@ -9,7 +9,7 @@ const FREE_CHOICE = 'free';
 const fmt = (n) => (n === null || n === undefined ? '–' : Number(n.toFixed(2)).toString());
 
 // מנה אחת בארוחה: הכמויות, מי מכינה, וכפתור "אני מכינה" עם שדה כמות לפיצול
-export default function DishRow({ mealDish, copyNumber, mealType, dishes, currentUserId, canEdit, isAdmin, onTake, onCancel, onRemove }) {
+export default function DishRow({ mealDish, copyNumber, mealType, dishes, currentUserId, canEdit, canAssign, onTake, onCancel, onRemove, onError }) {
   const [quantity, setQuantity] = useState('');
   const [specifiedDishId, setSpecifiedDishId] = useState('');
   const [freeName, setFreeName] = useState('');
@@ -21,10 +21,15 @@ export default function DishRow({ mealDish, copyNumber, mealType, dishes, curren
     ? 100
     : required ? Math.min(100, Math.round((mealDish.assignedQuantity / required) * 100)) : 0;
 
-  // email: מנהלת המערכת משבצת משתמשת אחרת לפי האימייל שלה
+  // email: בעלת הארוחה משבצת משתמשת אחרת לפי האימייל שלה
   async function handleTake(email) {
     // בלי כמות: לוקחים את כל מה שנותר
     const q = quantity ? Number(quantity) : mealDish.remainingQuantity;
+    // מנה שעוד לא נבחר לה מאכל אין לה כמות שנותרה, ולכן חייבים למלא כמות
+    if (!q || q <= 0) {
+      onError?.('יש למלא כמות');
+      return;
+    }
     let ok;
     if (specifiedDishId === FREE_CHOICE) {
       if (!freeName.trim()) return;
@@ -78,7 +83,7 @@ export default function DishRow({ mealDish, copyNumber, mealType, dishes, curren
                   <span className="avatar xs">{initials(a.userName)}</span>
                   {mine ? 'אני' : a.userName}
                   <span className="q">{fmt(a.quantity)}</span>
-                  {(mine || isAdmin) && (
+                  {(mine || canAssign) && (
                     <button className="chip-x" onClick={() => onCancel(a.id)} title="ביטול" aria-label={mine ? 'ביטול ההרשמה שלי' : `ביטול השיבוץ של ${a.userName}`}>
                       <Icon name="close" size={13} strokeWidth={2.4} />
                     </button>
@@ -116,7 +121,7 @@ export default function DishRow({ mealDish, copyNumber, mealType, dishes, curren
             <button className="primary small" onClick={() => handleTake()}>
               <Icon name="plus" size={15} /> אני מכינה
             </button>
-            {isAdmin && (
+            {canAssign && (
               <form className="assign-email" onSubmit={handleAssign}>
                 <input type="email" dir="ltr" list="user-emails" placeholder="אימייל של המכינה" aria-label="שיבוץ לפי אימייל"
                   value={assignEmail} onChange={(e) => setAssignEmail(e.target.value)} />

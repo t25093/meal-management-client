@@ -58,7 +58,7 @@ export default function MealDetailsPage() {
   useEffect(() => { loadMealDishes(); }, [loadMealDishes]);
   useEffect(() => { loadAllDishes().then(setDishes).catch(() => {}); }, []);
 
-  // מנהלת המערכת: רשימת המשתמשות להשלמה אוטומטית בשדה "שיבוץ לפי אימייל"
+  // מנהלת המערכת: רשימת כל המשתמשות להשלמה אוטומטית בשדה "שיבוץ לפי אימייל"
   const isAdmin = currentUser?.role === 'Admin';
   const [users, setUsers] = useState([]);
   useEffect(() => {
@@ -475,8 +475,9 @@ export default function MealDetailsPage() {
                           dishes={dishes}
                           currentUserId={currentUserId}
                           canEdit={meal.canEdit}
-                          isAdmin={isAdmin}
+                          canAssign={meal.canEdit || isAdmin}
                           onTake={handleTake}
+                          onError={(message) => { clearMessages(); setError(message); }}
                           onCancel={handleCancel}
                           onRemove={handleRemoveDish}
                         />
@@ -562,9 +563,10 @@ export default function MealDetailsPage() {
           )}
         </main>
 
-        {isAdmin && (
+        {/* השלמה אוטומטית בשדה "שיבוץ לפי אימייל": למנהלת המערכת כל המשתמשות, לבעלת הארוחה המשתתפות */}
+        {(meal.canEdit || isAdmin) && (
           <datalist id="user-emails">
-            {users.map((u) => <option key={u.id} value={u.email}>{u.fullName}</option>)}
+            {(isAdmin ? users : meal.participants).map((u) => <option key={u.id} value={u.email}>{u.fullName}</option>)}
           </datalist>
         )}
 
