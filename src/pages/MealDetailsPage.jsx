@@ -58,6 +58,22 @@ export default function MealDetailsPage() {
   useEffect(() => { loadMealDishes(); }, [loadMealDishes]);
   useEffect(() => { loadAllDishes().then(setDishes).catch(() => {}); }, []);
 
+  // מנהלת המערכת: רשימת המשתמשות להשלמה אוטומטית בשדה "שיבוץ לפי אימייל"
+  const isAdmin = currentUser?.role === 'Admin';
+  const [users, setUsers] = useState([]);
+  useEffect(() => {
+    if (!isAdmin) return;
+    (async () => {
+      const all = [];
+      for (let page = 1; page <= 40; page++) {
+        const { data } = await api.get('/api/users', { params: { page, pageSize: 50 }, background: true });
+        all.push(...data.items);
+        if (all.length >= data.totalCount || data.items.length === 0) break;
+      }
+      setUsers(all);
+    })().catch(() => {});
+  }, [isAdmin]);
+
   // שינויים של משתתפות אחרות מופיעים לבד, בלי ללחוץ "רענון"
   useEffect(() => {
     const timer = setInterval(() => {
@@ -88,6 +104,7 @@ export default function MealDetailsPage() {
   async function handleTake(mealDish, quantity, choice = {}) {
     clearMessages();
     const body = { quantity };
+    if (choice.email) body.assignToEmail = choice.email;
     if (choice.dishId) body.specifiedDishId = choice.dishId;
     if (choice.freeName) {
       // השרת מוסיף את המאכל החדש למאגר ומשבץ אותו במנה, בבקשה אחת
@@ -100,13 +117,17 @@ export default function MealDetailsPage() {
       };
     }
     try {
-      await api.post(`/api/meals/${mealId}/dishes/${mealDish.id}/assignments`, body);
-      setSuccess(`נרשמת להכין ${quantity}`);
+      const response = await api.post(`/api/meals/${mealId}/dishes/${mealDish.id}/assignments`, body);
+      setSuccess(choice.email
+        ? `${response.data.userName || choice.email} שובצה להכין ${quantity}`
+        : `נרשמת להכין ${quantity}`);
       await Promise.all([loadMealDishes(), loadMeal()]);
+      return true;
     } catch (err) {
       // מאכל שהוקלד וכבר קיים במאגר: מציגים את הודעת השרת ("יש לבחור אותו מהרשימה")
       if (choice.freeName && isConflict(err)) setError(getErrorMessage(err));
       else await handleError(err);
+      return false;
     }
   }
 
@@ -454,6 +475,7 @@ export default function MealDetailsPage() {
                           dishes={dishes}
                           currentUserId={currentUserId}
                           canEdit={meal.canEdit}
+                          isAdmin={isAdmin}
                           onTake={handleTake}
                           onCancel={handleCancel}
                           onRemove={handleRemoveDish}
@@ -539,6 +561,12 @@ export default function MealDetailsPage() {
             </>
           )}
         </main>
+
+        {isAdmin && (
+          <datalist id="user-emails">
+            {users.map((u) => <option key={u.id} value={u.email}>{u.fullName}</option>)}
+          </datalist>
+        )}
 
         {/* ב-RTL הרכיב השני ב-flex מוצג משמאל */}
         <aside>

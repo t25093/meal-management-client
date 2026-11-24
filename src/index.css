@@ -948,6 +948,8 @@ button.glass.danger-glass:hover { background: rgba(255, 99, 99, 0.25); border-co
 .take .qty-input { width: 84px; padding: 7px 10px; font-size: 13px; text-align: center; }
 .take .free-name { width: 140px; padding: 7px 10px; font-size: 13px; }
 .take button { padding: 7px 14px; }
+.take .assign-email { display: flex; align-items: center; gap: 6px; }
+.take .assign-email input { width: 190px; padding: 7px 10px; font-size: 13px; }
 .done-tag { display: inline-flex; align-items: center; gap: 6px; padding: 6px 12px; border-radius: 999px; background: var(--accent-soft); color: var(--accent-ink); font-size: 13px; font-weight: 600; }
 
 /* משתתפות */

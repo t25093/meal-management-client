@@ -9,10 +9,11 @@ const FREE_CHOICE = 'free';
 const fmt = (n) => (n === null || n === undefined ? '–' : Number(n.toFixed(2)).toString());
 
 // מנה אחת בארוחה: הכמויות, מי מכינה, וכפתור "אני מכינה" עם שדה כמות לפיצול
-export default function DishRow({ mealDish, copyNumber, mealType, dishes, currentUserId, canEdit, onTake, onCancel, onRemove }) {
+export default function DishRow({ mealDish, copyNumber, mealType, dishes, currentUserId, canEdit, isAdmin, onTake, onCancel, onRemove }) {
   const [quantity, setQuantity] = useState('');
   const [specifiedDishId, setSpecifiedDishId] = useState('');
   const [freeName, setFreeName] = useState('');
+  const [assignEmail, setAssignEmail] = useState('');
   const isUndefined = mealDish.dishId === null;
   const unit = mealDish.unit ? units[mealDish.unit] : '';
   const required = mealDish.requiredQuantity;
@@ -20,17 +21,25 @@ export default function DishRow({ mealDish, copyNumber, mealType, dishes, curren
     ? 100
     : required ? Math.min(100, Math.round((mealDish.assignedQuantity / required) * 100)) : 0;
 
-  function handleTake() {
+  // email: מנהלת המערכת משבצת משתמשת אחרת לפי האימייל שלה
+  async function handleTake(email) {
     // בלי כמות: לוקחים את כל מה שנותר
     const q = quantity ? Number(quantity) : mealDish.remainingQuantity;
+    let ok;
     if (specifiedDishId === FREE_CHOICE) {
       if (!freeName.trim()) return;
-      onTake(mealDish, q, { freeName: freeName.trim() });
+      ok = await onTake(mealDish, q, { freeName: freeName.trim(), email });
     } else {
-      onTake(mealDish, q, { dishId: specifiedDishId ? Number(specifiedDishId) : null });
+      ok = await onTake(mealDish, q, { dishId: specifiedDishId ? Number(specifiedDishId) : null, email });
     }
     setQuantity('');
     setFreeName('');
+    if (ok && email) setAssignEmail('');
+  }
+
+  function handleAssign(e) {
+    e.preventDefault();
+    if (assignEmail.trim()) handleTake(assignEmail.trim());
   }
 
   return (
@@ -69,8 +78,8 @@ export default function DishRow({ mealDish, copyNumber, mealType, dishes, curren
                   <span className="avatar xs">{initials(a.userName)}</span>
                   {mine ? 'אני' : a.userName}
                   <span className="q">{fmt(a.quantity)}</span>
-                  {mine && (
-                    <button className="chip-x" onClick={() => onCancel(a.id)} title="ביטול" aria-label="ביטול ההרשמה שלי">
+                  {(mine || isAdmin) && (
+                    <button className="chip-x" onClick={() => onCancel(a.id)} title="ביטול" aria-label={mine ? 'ביטול ההרשמה שלי' : `ביטול השיבוץ של ${a.userName}`}>
                       <Icon name="close" size={13} strokeWidth={2.4} />
                     </button>
                   )}
@@ -104,9 +113,18 @@ export default function DishRow({ mealDish, copyNumber, mealType, dishes, curren
             <input className="qty-input" type="number" step="0.01" min="0.01" aria-label="כמות"
               placeholder={isUndefined ? 'כמות' : fmt(mealDish.remainingQuantity)}
               value={quantity} onChange={(e) => setQuantity(e.target.value)} />
-            <button className="primary small" onClick={handleTake}>
+            <button className="primary small" onClick={() => handleTake()}>
               <Icon name="plus" size={15} /> אני מכינה
             </button>
+            {isAdmin && (
+              <form className="assign-email" onSubmit={handleAssign}>
+                <input type="email" dir="ltr" list="user-emails" placeholder="אימייל של המכינה" aria-label="שיבוץ לפי אימייל"
+                  value={assignEmail} onChange={(e) => setAssignEmail(e.target.value)} />
+                <button type="button" className="small" onClick={handleAssign} disabled={!assignEmail.trim()}>
+                  <Icon name="mail" size={15} /> שיבוץ
+                </button>
+              </form>
+            )}
           </div>
         )}
         {canEdit && (
