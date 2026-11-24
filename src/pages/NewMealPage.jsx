@@ -20,6 +20,7 @@ export default function NewMealPage() {
   const [error, setError] = useState('');
   const [participantErrors, setParticipantErrors] = useState([]);
   const [createdMealId, setCreatedMealId] = useState(null);
+  const [busy, setBusy] = useState(false); // חוסם לחיצות חוזרות על כפתור היצירה
 
   useEffect(() => {
     loadAllDishes().then(setDishes).catch((err) => setError(getErrorMessage(err)));
@@ -54,6 +55,8 @@ export default function NewMealPage() {
 
   async function handleSubmit(e) {
     e.preventDefault();
+    if (busy) return; // הארוחה כבר בתהליך יצירה
+    setBusy(true);
     setError('');
     setParticipantErrors([]);
     try {
@@ -84,6 +87,7 @@ export default function NewMealPage() {
       }
     } catch (err) {
       setError(getErrorMessage(err));
+      setBusy(false); // רק אם היצירה נכשלה אפשר לנסות שוב
     }
   }
 
@@ -160,7 +164,9 @@ export default function NewMealPage() {
             אימיילים (אחד בכל שורה, או רשימת נמענים שהודבקה מהמייל)
             <textarea rows="3" value={emails} onChange={(e) => setEmails(e.target.value)} />
           </label>
-          <button type="submit" className="lg">יצירת הארוחה</button>
+          <button type="submit" className={busy ? 'lg loading' : 'lg'} disabled={busy}>
+            {busy ? 'יוצרת ארוחה...' : 'יצירת הארוחה'}
+          </button>
         </div>
       </form>
 

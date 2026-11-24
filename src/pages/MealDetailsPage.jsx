@@ -156,7 +156,12 @@ export default function MealDetailsPage() {
 
   // עריכת פרטי הארוחה: בעלת הארוחה או משתתפת עם הרשאת עריכה
   function startEditing() {
-    setEditForm({ name: meal.name, eventDate: toLocalInput(meal.eventDate), guestsCount: meal.guestsCount });
+    setEditForm({
+      name: meal.name,
+      eventDate: toLocalInput(meal.eventDate),
+      guestsCount: meal.guestsCount,
+      mealType: meal.mealType,
+    });
   }
 
   async function handleSaveDetails(e) {
@@ -167,6 +172,7 @@ export default function MealDetailsPage() {
         name: editForm.name,
         eventDate: new Date(editForm.eventDate).toISOString(), // השרת עובד ב-UTC
         guestsCount: Number(editForm.guestsCount),
+        mealType: editForm.mealType,
       });
       setEditForm(null);
       setSuccess('פרטי הארוחה עודכנו');
@@ -363,6 +369,14 @@ export default function MealDetailsPage() {
               מספר אורחים
               <input type="number" min="1" max="1000" value={editForm.guestsCount} required
                 onChange={(e) => setEditForm({ ...editForm, guestsCount: e.target.value })} />
+            </label>
+            <label>
+              סוג הארוחה
+              <select value={editForm.mealType}
+                onChange={(e) => setEditForm({ ...editForm, mealType: e.target.value })}>
+                <option value="Dairy">{mealTypes.Dairy}</option>
+                <option value="Meat">{mealTypes.Meat}</option>
+              </select>
             </label>
           </div>
           <div className="row" style={{ marginBottom: 0 }}>
