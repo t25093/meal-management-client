@@ -36,6 +36,9 @@ const paths = {
   refresh: <><path d="M20 11a8 8 0 0 0-14.3-4.9L4 8" /><path d="M4 4v4h4" /><path d="M4 13a8 8 0 0 0 14.3 4.9L20 16" /><path d="M20 20v-4h-4" /></>,
   send: <path d="M21 3L10 14M21 3l-7 18-4-7-7-4z" />,
   book: <><path d="M4 5.5A2.5 2.5 0 0 1 6.5 3H20v16H6.5A2.5 2.5 0 0 0 4 21.5z" /><path d="M4 19.5V5.5M8 7h8" /></>,
+  cart: <><path d="M3 4h2.2l2.3 11h10.8l2.2-8H6.4" /><circle cx="9.5" cy="19.5" r="1.4" /><circle cx="17" cy="19.5" r="1.4" /></>,
+  bag: <><path d="M5 8h14l-1.2 12.5H6.2z" /><path d="M9 10.5V6.5a3 3 0 0 1 6 0v4" /></>,
+  note: <><path d="M5 4h14v11l-5 5H5z" /><path d="M14 20v-5h5M8.5 9h7M8.5 12.5h4" /></>,
   guests: <><circle cx="12" cy="7.5" r="3.5" /><path d="M5 20a7 7 0 0 1 14 0" /></>,
 };
 

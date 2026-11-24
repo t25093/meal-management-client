@@ -13,6 +13,7 @@ import MenuPicker from '../components/MenuPicker';
 import NewDishForm from '../components/NewDishForm';
 import ChatPanel from '../components/ChatPanel';
 import RecipesPanel from '../components/RecipesPanel';
+import ListsPanel from '../components/ListsPanel';
 
 const REFRESH_MS = 10000;
 
@@ -541,6 +542,7 @@ export default function MealDetailsPage() {
 
         {/* ב-RTL הרכיב השני ב-flex מוצג משמאל */}
         <aside>
+          <ListsPanel mealId={mealId} />
           <ChatPanel mealId={mealId} />
           <RecipesPanel mealId={mealId} meal={meal} currentUserId={currentUserId} />
         </aside>

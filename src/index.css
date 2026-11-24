@@ -1046,3 +1046,66 @@ button.glass.danger-glass:hover { background: rgba(255, 99, 99, 0.25); border-co
   .uh-stats { width: 100%; }
   .uh-stats div { flex: 1; min-width: 0; }
 }
+
+/* ===== רשימות: קניות ולהביא ===== */
+.lists-card .card-head { margin-bottom: 14px; }
+.li-summary { font-size: 13px; }
+.li-switch { display: grid; grid-template-columns: 1fr 1fr; gap: 4px; padding: 4px; margin-bottom: 14px; border: 1px solid var(--border); border-radius: 13px; background: var(--surface-2); }
+.li-switch button { display: inline-flex; align-items: center; justify-content: center; gap: 7px; padding: 8px 10px; border: none; border-radius: 10px; background: transparent; color: var(--text-muted); font-size: 14px; font-weight: 500; }
+.li-switch button:hover { background: transparent; color: var(--text); }
+.li-switch button.active { background: var(--surface); color: var(--text); box-shadow: var(--shadow-sm); }
+.li-switch .count { padding: 0 7px; border-radius: 999px; background: var(--primary-soft); color: var(--primary); font-size: 12px; line-height: 19px; }
+.li-progress { margin: 0 0 12px; }
+.li-progress .bar { height: 5px; }
+.li-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 2px; }
+.li-item { position: relative; display: flex; align-items: flex-start; gap: 11px; padding: 10px 8px; border-radius: 11px; transition: background 0.15s; }
+.li-item:hover { background: var(--surface-2); }
+.li-item + .li-item::before { content: ''; position: absolute; top: -1px; inset-inline: 8px; height: 1px; background: var(--border); }
+.li-item:hover::before, .li-item:hover + .li-item::before { opacity: 0; }
+.li-check { display: grid; place-items: center; flex-shrink: 0; width: 22px; height: 22px; margin-top: 1px; padding: 0; border-radius: 7px; border: 1.5px solid var(--border-strong); background: transparent; color: #062b22; cursor: pointer; transition: background 0.15s, border-color 0.15s, transform 0.15s; }
+.li-check:hover { border-color: var(--accent); background: var(--accent-soft); }
+.li-check:active { transform: scale(0.9); }
+.li-check.on { background: var(--accent); border-color: var(--accent); }
+.li-body { flex: 1; min-width: 0; display: grid; gap: 2px; }
+.li-name { font-size: 14.5px; font-weight: 500; color: var(--text); overflow-wrap: anywhere; }
+.li-note { font-size: 12.5px; color: var(--text-muted); line-height: 1.45; overflow-wrap: anywhere; }
+.li-by { font-size: 11.5px; color: var(--accent-ink); }
+.li-item.done .li-name { color: var(--text-muted); text-decoration: line-through; text-decoration-color: color-mix(in srgb, var(--text-muted) 60%, transparent); }
+.li-item.done .li-note { opacity: 0.7; }
+.li-actions { display: flex; gap: 2px; opacity: 0; transition: opacity 0.15s; }
+.li-item:hover .li-actions, .li-item:focus-within .li-actions { opacity: 1; }
+.li-actions .icon-btn { width: 30px; height: 30px; }
+.li-done-toggle { display: inline-flex; align-items: center; gap: 6px; margin: 12px 0 4px; padding: 4px 6px; border: none; background: transparent; color: var(--text-muted); font-size: 13px; font-weight: 500; }
+.li-done-toggle:hover { background: transparent; color: var(--text); }
+.li-done-toggle .icon-svg { transition: transform 0.2s var(--ease); }
+.li-done-toggle .icon-svg.open { transform: rotate(-90deg); }
+.li-all-done { display: flex; align-items: center; gap: 6px; margin: 4px 0 0; padding: 10px 12px; border-radius: 11px; background: var(--success-soft); color: var(--success); font-size: 13.5px; font-weight: 500; }
+.li-add { margin-top: 14px; padding-top: 14px; border-top: 1px solid var(--border); display: grid; grid-template-columns: minmax(0, 1fr); gap: 8px; }
+.li-add-row { display: flex; gap: 6px; min-width: 0; }
+.li-add-row input { width: auto; }
+.li-add-row input { flex: 1; min-width: 0; margin: 0; }
+.li-add-row .icon-btn { width: 42px; height: auto; flex-shrink: 0; }
+.li-add-row .icon-btn.active { color: var(--primary); border-color: var(--primary); background: var(--primary-soft); }
+.li-add-btn { background: var(--primary); color: var(--primary-ink); border-color: var(--primary); }
+.li-add-btn:hover:not(:disabled) { background: var(--primary-hover); color: var(--primary-ink); }
+.li-add-btn:disabled { opacity: 0.45; cursor: default; }
+.li-add-note { margin: 0; font-size: 13.5px; }
+.li-edit { flex: 1; display: grid; gap: 6px; }
+.li-edit input { margin: 0; }
+.li-edit-actions { display: flex; gap: 6px; }
+.li-item.editing { background: var(--surface-2); }
+@media (hover: none) { .li-actions { opacity: 1; } }
+/* תווית קטנה שמופיעה מעל כפתור אייקון כשעוברים עליו */
+.lists-card [data-tip] { position: relative; }
+.lists-card [data-tip]::after {
+  content: attr(data-tip);
+  position: absolute; bottom: calc(100% + 8px); left: 50%;
+  transform: translate(-50%, 4px);
+  padding: 5px 10px; border-radius: 8px;
+  background: var(--text); color: var(--bg);
+  font-size: 12px; font-weight: 500; line-height: 1.3; white-space: nowrap;
+  box-shadow: var(--shadow); pointer-events: none;
+  opacity: 0; transition: opacity 0.15s, transform 0.15s var(--ease); z-index: 5;
+}
+.lists-card [data-tip]:hover::after, .lists-card [data-tip]:focus-visible::after { opacity: 1; transform: translate(-50%, 0); }
+@media (hover: none) { .lists-card [data-tip]::after { display: none; } }
