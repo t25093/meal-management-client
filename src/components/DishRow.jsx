@@ -79,9 +79,12 @@ export default function DishRow({ mealDish, copyNumber, mealType, dishes, curren
             {mealDish.assignments.map((a) => {
               const mine = a.userId === currentUserId;
               return (
-                <li key={a.id} className={mine ? 'mine' : ''}>
-                  <span className="avatar xs">{initials(a.userName)}</span>
-                  {mine ? 'אני' : a.userName}
+                <li key={a.id} className={mine ? 'mine' : a.isPending ? 'pending' : ''}
+                  title={a.isPending ? 'הוזמנה ועוד לא נרשמה. המנה תעבור אליה כשתירשם' : undefined}>
+                  {a.isPending
+                    ? <span className="avatar xs ghost"><Icon name="mail" size={12} /></span>
+                    : <span className="avatar xs">{initials(a.userName)}</span>}
+                  {mine ? 'אני' : a.isPending ? <span dir="ltr">{a.userName}</span> : a.userName}
                   <span className="q">{fmt(a.quantity)}</span>
                   {(mine || canAssign) && (
                     <button className="chip-x" onClick={() => onCancel(a.id)} title="ביטול" aria-label={mine ? 'ביטול ההרשמה שלי' : `ביטול השיבוץ של ${a.userName}`}>

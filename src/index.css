@@ -948,8 +948,12 @@ button.glass.danger-glass:hover { background: rgba(255, 99, 99, 0.25); border-co
 .take .qty-input { width: 84px; padding: 7px 10px; font-size: 13px; text-align: center; }
 .take .free-name { width: 140px; padding: 7px 10px; font-size: 13px; }
 .take button { padding: 7px 14px; }
-.take .assign-email { display: flex; align-items: center; gap: 6px; }
-.take .assign-email input { width: 190px; padding: 7px 10px; font-size: 13px; }
+.assignees li.pending { border-style: dashed; color: var(--text-2); }
+/* שיבוץ לפי אימייל: בשורה משלו מתחת ל"אני מכינה", כדי לא לדחוק את הכמויות */
+.take:has(.assign-email) { max-width: 360px; }
+.take .assign-email { display: flex; align-items: center; gap: 6px; flex-basis: 100%; justify-content: flex-end; }
+.take .assign-email input { flex: 1; min-width: 0; max-width: 250px; padding: 7px 10px; font-size: 13px; }
+.qty-text { white-space: nowrap; }
 .done-tag { display: inline-flex; align-items: center; gap: 6px; padding: 6px 12px; border-radius: 999px; background: var(--accent-soft); color: var(--accent-ink); font-size: 13px; font-weight: 600; }
 
 /* משתתפות */
@@ -1019,6 +1023,9 @@ button.glass.danger-glass:hover { background: rgba(255, 99, 99, 0.25); border-co
   .dish { flex-direction: column; align-items: stretch; }
   .dish-actions { justify-content: space-between; }
   .take { justify-content: flex-start; flex: 1; }
+  .take:has(.assign-email) { max-width: none; }
+  .take .assign-email { justify-content: flex-start; }
+  .qty-text { white-space: normal; }
   .dish-qty { padding-inline-start: 0; flex-wrap: wrap; }
   .assignees { padding: 0; }
   .meal-hero { padding: 22px 18px; }

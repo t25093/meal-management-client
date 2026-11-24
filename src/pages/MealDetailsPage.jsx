@@ -131,6 +131,21 @@ export default function MealDetailsPage() {
     }
   }
 
+  // מייל אחד לכל משובצת, עם כל המנות שלה בארוחה
+  const [notifying, setNotifying] = useState(false);
+  async function handleNotify() {
+    if (!window.confirm('לשלוח לכל משובצת מייל אחד עם כל המנות שלה?')) return;
+    clearMessages();
+    setNotifying(true);
+    try {
+      const { data } = await api.post(`/api/meals/${mealId}/assignments/notify`);
+      setSuccess(data.sent === 1 ? 'נשלח מייל למשובצת אחת' : `נשלחו מיילים ל-${data.sent} משובצות`);
+    } catch (err) {
+      setError(getErrorMessage(err));
+    }
+    setNotifying(false);
+  }
+
   async function handleCancel(assignmentId) {
     clearMessages();
     try {
@@ -438,6 +453,12 @@ export default function MealDetailsPage() {
                     <input type="radio" checked={status === 'open'} onChange={() => setStatus('open')} /> פתוחות בלבד
                   </label>
                 </span>
+                {meal.canEdit && (
+                  <button className={`small ${notifying ? 'loading' : ''}`} onClick={handleNotify} disabled={notifying}
+                    title="כל משובצת תקבל מייל אחד עם כל המנות שלה">
+                    <Icon name="mail" size={15} /> מייל למשובצות
+                  </button>
+                )}
                 <button className="icon-btn bordered" onClick={() => { clearMessages(); loadMealDishes(); }} title="רענון" aria-label="רענון">
                   <Icon name="refresh" size={17} />
                 </button>
@@ -567,6 +588,7 @@ export default function MealDetailsPage() {
         {(meal.canEdit || isAdmin) && (
           <datalist id="user-emails">
             {(isAdmin ? users : meal.participants).map((u) => <option key={u.id} value={u.email}>{u.fullName}</option>)}
+            {meal.pendingEmails?.map((email) => <option key={email} value={email}>הוזמנה, עוד לא נרשמה</option>)}
           </datalist>
         )}
 
