@@ -1118,3 +1118,13 @@ button.glass.danger-glass:hover { background: rgba(255, 99, 99, 0.25); border-co
 }
 .lists-card [data-tip]:hover::after, .lists-card [data-tip]:focus-visible::after { opacity: 1; transform: translate(-50%, 0); }
 @media (hover: none) { .lists-card [data-tip]::after { display: none; } }
+
+/* ===== צ'אט: צליל, ומה שאחרות כותבות לפני השליחה ===== */
+.chat-head-actions { display: inline-flex; align-items: center; gap: 10px; }
+.sound-btn { width: 32px; height: 32px; color: var(--text-muted); }
+.sound-btn.on { color: var(--primary); }
+.chat-item.theirs .chat-bubble.typing-preview { background: transparent; color: var(--text-2); border: 1.5px dashed var(--border); }
+.typing-preview .caret { display: inline-block; width: 2px; height: 1em; margin-inline-start: 2px; vertical-align: -2px; background: var(--primary); animation: caret-blink 1s steps(1) infinite; }
+@keyframes caret-blink { 50% { opacity: 0; } }
+.profile-edit .form-actions { gap: 10px; margin-top: 4px; }
+.profile-edit label:last-of-type { margin-bottom: 18px; }

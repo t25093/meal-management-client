@@ -2,9 +2,10 @@ import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import api from '../api/client';
 import { getErrorMessage } from '../api/errors';
-import { getUser, logout } from '../auth';
+import { getUser, logout, saveAuth } from '../auth';
 import { initials, useTheme } from '../theme';
 import Icon from '../components/Icon';
+import PasswordInput from '../components/PasswordInput';
 
 // פרופיל: פרטי החשבון, תצוגה, שינוי סיסמה דרך קישור במייל, ומחיקת החשבון
 export default function ProfilePage() {
@@ -15,10 +16,51 @@ export default function ProfilePage() {
   const [resetState, setResetState] = useState('idle'); // idle | sending | sent
   const [copied, setCopied] = useState(false);
   const isAdmin = me?.role === 'Admin';
+  const [editing, setEditing] = useState(false);
+  const [form, setForm] = useState({ fullName: '', email: '', currentPassword: '' });
+  const [saving, setSaving] = useState(false);
+  const [saved, setSaved] = useState(false);
+  const [editError, setEditError] = useState('');
+  // כמו בשרת: בלי רווחים ובאותיות קטנות, כדי לדעת אם האימייל באמת השתנה
+  const normalizeEmail = (email) => email.replace(/\s/g, '').toLowerCase();
+  const emailChanged = editing && normalizeEmail(form.email) !== normalizeEmail(me?.email ?? '');
 
   useEffect(() => {
     api.get('/api/users/me').then((r) => setMe(r.data)).catch((err) => setError(getErrorMessage(err)));
   }, []);
+
+  function startEdit() {
+    setForm({ fullName: me?.fullName ?? '', email: me?.email ?? '', currentPassword: '' });
+    setEditError('');
+    setSaved(false);
+    setEditing(true);
+  }
+
+  // שמירת שם ואימייל. שינוי אימייל דורש את הסיסמה הנוכחית, והשרת בודק שהאימייל לא תפוס.
+  async function saveDetails(e) {
+    e.preventDefault();
+    if (!form.fullName.trim()) return setEditError('יש למלא שם מלא');
+    if (!form.email.trim()) return setEditError('יש למלא אימייל');
+    if (emailChanged && !form.currentPassword) return setEditError('כדי לשנות אימייל יש להזין את הסיסמה הנוכחית');
+    setEditError('');
+    setSaving(true);
+    try {
+      const { data } = await api.put('/api/users/me', {
+        fullName: form.fullName.trim(),
+        email: form.email.trim(),
+        currentPassword: emailChanged ? form.currentPassword : null,
+      });
+      // השרת מחזיר token חדש עם הפרטים המעודכנים
+      saveAuth(data);
+      setMe(data.user);
+      setEditing(false);
+      setSaved(true);
+    } catch (err) {
+      setEditError(getErrorMessage(err));
+    } finally {
+      setSaving(false);
+    }
+  }
 
   async function copyEmail() {
     try {
@@ -95,6 +137,58 @@ export default function ProfilePage() {
         </section>
 
         <div>
+          <section className="card">
+            <div className="card-head">
+              <h3>פרטים אישיים</h3>
+              {!editing && (
+                <button className="ghost" onClick={startEdit} disabled={!me?.email}>
+                  <Icon name="edit" size={16} /> עריכה
+                </button>
+              )}
+            </div>
+            {!editing ? (
+              <>
+                {saved && <div className="success">הפרטים עודכנו.</div>}
+                <div className="setting-row">
+                  <p>השם והאימייל שלך, כפי שהם מופיעים למשתתפות בארוחות.</p>
+                </div>
+              </>
+            ) : (
+              <form onSubmit={saveDetails} className="profile-edit">
+                {editError && <div className="error">{editError}</div>}
+                <label>
+                  שם מלא
+                  <span className="field">
+                    <Icon name="user" size={18} />
+                    <input value={form.fullName} onChange={(e) => setForm({ ...form, fullName: e.target.value })} maxLength={100} autoFocus />
+                  </span>
+                </label>
+                <label>
+                  אימייל
+                  <span className="field">
+                    <Icon name="mail" size={18} />
+                    <input type="email" dir="ltr" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} />
+                  </span>
+                  {emailChanged && <span className="field-hint">ההתחברות מעכשיו תהיה עם האימייל החדש.</span>}
+                </label>
+                {emailChanged && (
+                  <label>
+                    סיסמה נוכחית
+                    <PasswordInput value={form.currentPassword} autoComplete="current-password"
+                      onChange={(e) => setForm({ ...form, currentPassword: e.target.value })} />
+                    <span className="field-hint">לאימות שזו את, לפני שינוי האימייל.</span>
+                  </label>
+                )}
+                <div className="row form-actions">
+                  <button type="submit" className={`primary ${saving ? 'loading' : ''}`} disabled={saving}>
+                    <Icon name="check" size={17} /> שמירה
+                  </button>
+                  <button type="button" className="ghost" onClick={() => setEditing(false)} disabled={saving}>ביטול</button>
+                </div>
+              </form>
+            )}
+          </section>
+
           <section className="card">
             <h3>תצוגה</h3>
             <div className="setting-row">

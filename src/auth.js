@@ -5,6 +5,8 @@ const USER_KEY = 'user';
 export function saveAuth(authResponse) {
   localStorage.setItem(TOKEN_KEY, authResponse.token);
   localStorage.setItem(USER_KEY, JSON.stringify(authResponse.user));
+  // מודיע למסגרת (סרגל הצד) שהפרטים השתנו, למשל אחרי עריכת שם בפרופיל
+  window.dispatchEvent(new Event('auth-changed'));
 }
 
 export function getToken() {

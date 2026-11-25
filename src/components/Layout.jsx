@@ -14,6 +14,14 @@ export default function Layout() {
   const isAdmin = user?.role === 'Admin';
   const [theme, setTheme] = useTheme();
   const [navOpen, setNavOpen] = useState(false);
+  const [, setAuthVersion] = useState(0);
+
+  // אחרי עריכת שם או אימייל בפרופיל, הסרגל מציג את הפרטים החדשים
+  useEffect(() => {
+    const onChange = () => setAuthVersion((v) => v + 1);
+    window.addEventListener('auth-changed', onChange);
+    return () => window.removeEventListener('auth-changed', onChange);
+  }, []);
 
   // מעבר בין מסכים סוגר את המגירה במובייל
   useEffect(() => setNavOpen(false), [location.pathname, location.search]);
