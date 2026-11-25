@@ -735,6 +735,7 @@ button.stat:hover { transform: translateY(-2px); border-color: var(--primary); b
 .segmented label { position: relative; margin: 0; padding: 6px 14px; border-radius: 9px; cursor: pointer; font-size: 13px; font-weight: 500; color: var(--text-muted); }
 .segmented label:has(input:checked) { background: var(--surface); color: var(--text); box-shadow: var(--shadow-sm); }
 .segmented input { position: absolute; opacity: 0; pointer-events: none; }
+.segmented .seg-count { margin-inline-start: 4px; padding: 0 6px; border-radius: 999px; background: var(--primary-soft); color: var(--primary); font-size: 11.5px; line-height: 17px; font-variant-numeric: tabular-nums; }
 .participants { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-top: 12px; }
 .participants .chips { margin: 0; }
 .edit-toggle { display: inline-flex; align-items: center; gap: 4px; margin: 0; padding: 2px 8px; border-radius: 999px; background: color-mix(in srgb, var(--text) 7%, transparent); color: var(--text); font-size: 12px; font-weight: 500; cursor: pointer; }
@@ -1138,3 +1139,10 @@ button.glass.danger-glass:hover { background: rgba(255, 99, 99, 0.25); border-co
 .typing-dots span:nth-child(2) { animation-delay: 0.15s; }
 .typing-dots span:nth-child(3) { animation-delay: 0.3s; }
 @keyframes typing-dot { 0%, 60%, 100% { opacity: 0.35; transform: translateY(0); } 30% { opacity: 1; transform: translateY(-3px); } }
+
+/* ===== סינון המנות בטלפון: "הכול / פתוחות בלבד / שלי" ממלא את רוחב השורה ===== */
+@media (max-width: 560px) {
+  .dish-filters { width: 100%; }
+  .dish-filters .segmented { flex: 1; }
+  .dish-filters .segmented label { flex: 1; text-align: center; white-space: nowrap; }
+}

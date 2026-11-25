@@ -26,7 +26,9 @@ export default function MealDetailsPage() {
   const [meal, setMeal] = useState(null);
   const [mealDishes, setMealDishes] = useState([]);
   const [dishes, setDishes] = useState([]);
-  const [status, setStatus] = useState('all');
+  const [filter, setFilter] = useState('all'); // all | open | mine
+  // "שלי" מסונן כאן בלקוח, ולכן מהשרת מבקשים את כל המנות
+  const status = filter === 'open' ? 'open' : 'all';
   const [error, setError] = useState('');
   const [conflict, setConflict] = useState('');
   const [success, setSuccess] = useState('');
@@ -339,9 +341,14 @@ export default function MealDetailsPage() {
   const days = Math.ceil((new Date(meal.eventDate).setHours(0, 0, 0, 0) - new Date().setHours(0, 0, 0, 0)) / 86400000);
   const when = days < 0 ? 'הארוחה עברה' : days === 0 ? 'היום!' : days === 1 ? 'מחר' : `בעוד ${days} ימים`;
 
+  // "שלי": רק המנות שאני משובצת להכין
+  const shownDishes = filter === 'mine'
+    ? mealDishes.filter((md) => md.assignments?.some((a) => a.userId === currentUserId))
+    : mealDishes;
+
   // המנות מקובצות לפי סוג, בסדר הקבוע של הסוגים
   const groups = Object.keys(categories)
-    .map((cat) => ({ cat, items: mealDishes.filter((md) => md.category === cat) }))
+    .map((cat) => ({ cat, items: shownDishes.filter((md) => md.category === cat) }))
     .filter((g) => g.items.length > 0);
 
   const eventDate = new Date(meal.eventDate);
@@ -444,13 +451,16 @@ export default function MealDetailsPage() {
               )}
             </div>
             {tab === 'dishes' && (
-              <div className="row" style={{ marginBottom: 0 }}>
+              <div className="row dish-filters" style={{ marginBottom: 0 }}>
                 <span className="segmented">
                   <label>
-                    <input type="radio" checked={status === 'all'} onChange={() => setStatus('all')} /> הכול
+                    <input type="radio" checked={filter === 'all'} onChange={() => setFilter('all')} /> הכול
                   </label>
                   <label>
-                    <input type="radio" checked={status === 'open'} onChange={() => setStatus('open')} /> פתוחות בלבד
+                    <input type="radio" checked={filter === 'open'} onChange={() => setFilter('open')} /> פתוחות בלבד
+                  </label>
+                  <label title="רק המנות שאני מכינה">
+                    <input type="radio" checked={filter === 'mine'} onChange={() => setFilter('mine')} /> שלי <span className="seg-count">{myCount}</span>
                   </label>
                 </span>
                 {meal.canEdit && (
@@ -468,7 +478,15 @@ export default function MealDetailsPage() {
 
           {tab === 'dishes' && (
             <>
-              {groups.length === 0 && (
+              {groups.length === 0 && filter === 'mine' && (
+                <div className="empty">
+                  <span className="empty-icon"><Icon name="user" size={26} /></span>
+                  <b>עוד לא נרשמת להכין אף מנה</b>
+                  <span>לוחצים "אני מכינה" ליד מנה, והיא תופיע כאן.</span>
+                  <button onClick={() => setFilter('all')}><Icon name="plate" size={16} /> לכל המנות</button>
+                </div>
+              )}
+              {groups.length === 0 && filter !== 'mine' && (
                 <div className="empty">
                   <span className="empty-icon"><Icon name={status === 'open' ? 'check' : 'plate'} size={26} /></span>
                   <b>{status === 'open' ? 'כל המנות נלקחו' : 'אין עדיין מנות בתפריט'}</b>
