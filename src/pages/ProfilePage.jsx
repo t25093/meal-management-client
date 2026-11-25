@@ -6,6 +6,7 @@ import { getUser, logout, saveAuth } from '../auth';
 import { initials, useTheme } from '../theme';
 import Icon from '../components/Icon';
 import PasswordInput from '../components/PasswordInput';
+import { saveShowTypingText, showsTypingText } from '../api/preferences';
 
 // פרופיל: פרטי החשבון, תצוגה, שינוי סיסמה דרך קישור במייל, ומחיקת החשבון
 export default function ProfilePage() {
@@ -59,6 +60,19 @@ export default function ProfilePage() {
       setEditError(getErrorMessage(err));
     } finally {
       setSaving(false);
+    }
+  }
+
+  // צ'אט: האם המשתתפות רואות את הטקסט שלי בזמן הקלדה
+  async function changeShowText(show) {
+    if (showsTypingText(me) === show) return;
+    const previous = me;
+    setMe({ ...me, showTypingText: show });
+    try {
+      setMe(await saveShowTypingText(show));
+    } catch (err) {
+      setMe(previous);
+      setError(getErrorMessage(err));
     }
   }
 
@@ -199,6 +213,21 @@ export default function ProfilePage() {
                 </button>
                 <button className={theme === 'light' ? 'active' : ''} onClick={() => setTheme('light')}>
                   <Icon name="sun" size={16} /> בהירה
+                </button>
+              </span>
+            </div>
+          </section>
+
+          <section className="card">
+            <h3>צ'אט</h3>
+            <div className="setting-row">
+              <p>בזמן שאת כותבת הודעה, המשתתפות בארוחה רואות את הטקסט עוד לפני השליחה. אפשר להסתיר אותו, ואז הן יראו רק שאת כותבת. ההגדרה חלה בכל המכשירים.</p>
+              <span className="theme-switch" role="group" aria-label="הטקסט שלי בזמן הקלדה">
+                <button className={showsTypingText(me) ? 'active' : ''} onClick={() => changeShowText(true)} disabled={!me?.id}>
+                  <Icon name="eye" size={16} /> גלוי
+                </button>
+                <button className={!showsTypingText(me) ? 'active' : ''} onClick={() => changeShowText(false)} disabled={!me?.id}>
+                  <Icon name="eyeOff" size={16} /> מוסתר
                 </button>
               </span>
             </div>

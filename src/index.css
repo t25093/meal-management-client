@@ -1128,3 +1128,13 @@ button.glass.danger-glass:hover { background: rgba(255, 99, 99, 0.25); border-co
 @keyframes caret-blink { 50% { opacity: 0; } }
 .profile-edit .form-actions { gap: 10px; margin-top: 4px; }
 .profile-edit label:last-of-type { margin-bottom: 18px; }
+
+/* ===== צ'אט: בחירה אם רואים את הטקסט שלי בזמן הקלדה ===== */
+.chat-privacy { display: flex; align-items: center; gap: 6px; margin-top: 10px; padding-inline: 4px; font-size: 12px; color: var(--text-muted); }
+.chat-privacy > .icon-svg { flex: none; }
+.chat-privacy button.link { font-size: 12px; padding: 0; margin-inline-start: auto; flex: none; }
+.chat-item.theirs .chat-bubble.typing-dots { display: inline-flex; align-items: center; gap: 4px; padding: 13px 15px; background: transparent; border: 1.5px dashed var(--border); }
+.typing-dots span { width: 7px; height: 7px; border-radius: 50%; background: var(--text-muted); animation: typing-dot 1.2s infinite ease-in-out; }
+.typing-dots span:nth-child(2) { animation-delay: 0.15s; }
+.typing-dots span:nth-child(3) { animation-delay: 0.3s; }
+@keyframes typing-dot { 0%, 60%, 100% { opacity: 0.35; transform: translateY(0); } 30% { opacity: 1; transform: translateY(-3px); } }

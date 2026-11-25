@@ -9,6 +9,12 @@ export function saveAuth(authResponse) {
   window.dispatchEvent(new Event('auth-changed'));
 }
 
+// עדכון פרטי המשתמשת השמורים (בלי token חדש), למשל אחרי שינוי הגדרה
+export function updateUser(user) {
+  localStorage.setItem(USER_KEY, JSON.stringify(user));
+  window.dispatchEvent(new Event('auth-changed'));
+}
+
 export function getToken() {
   return localStorage.getItem(TOKEN_KEY);
 }

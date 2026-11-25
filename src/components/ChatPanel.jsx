@@ -1,7 +1,8 @@
 import { useEffect, useRef, useState } from 'react';
 import api from '../api/client';
 import { getErrorMessage } from '../api/errors';
-import { getToken, getUser } from '../auth';
+import { getToken, getUser, updateUser } from '../auth';
+import { saveShowTypingText, showsTypingText } from '../api/preferences';
 import { initials } from '../theme';
 import { isChatSoundOn, playChatSound, setChatSoundOn, unlockChatSound } from '../chatSound';
 import Icon from './Icon';
@@ -33,6 +34,8 @@ export default function ChatPanel({ mealId }) {
   const [error, setError] = useState('');
   const [typing, setTyping] = useState([]);
   const [soundOn, setSoundOn] = useState(isChatSoundOn());
+  const [showText, setShowText] = useState(showsTypingText(getUser()));
+  const showTextRef = useRef(showText);
   const lastIdRef = useRef(null);
   const idsRef = useRef(new Set());
   const loadedRef = useRef(false);
@@ -45,6 +48,7 @@ export default function ChatPanel({ mealId }) {
   const hasTextRef = useRef(false); // האם אצל אחרות מוצג עכשיו טקסט שהתחלתי לכתוב
 
   soundRef.current = soundOn;
+  showTextRef.current = showText;
 
   // מוסיף הודעות בלי כפילויות (הודעה ששלחתי תחזור גם במשיכה הבאה)
   function addMessages(newMessages, initial = false) {
@@ -131,6 +135,16 @@ export default function ChatPanel({ mealId }) {
     };
   }, [mealId]);
 
+  // ההגדרה העדכנית מהשרת (אולי שונתה במכשיר אחר)
+  useEffect(() => {
+    api.get('/api/users/me', { background: true })
+      .then((response) => {
+        updateUser(response.data);
+        setShowText(showsTypingText(response.data));
+      })
+      .catch(() => {});
+  }, []);
+
   // צליל: דפדפנים מאפשרים להשמיע רק אחרי לחיצה או הקלדה בדף, אז "פותחים" אותו בפעולה הראשונה
   useEffect(() => {
     window.addEventListener('pointerdown', unlockChatSound, { once: true });
@@ -163,8 +177,10 @@ export default function ChatPanel({ mealId }) {
     const value = sync.pending;
     sync.pending = null;
     sync.inFlight = true;
+    // כשהטקסט מוסתר שולחים רק שאני כותבת, והטקסט עצמו לא יוצא מהדפדפן
+    const body = showTextRef.current ? { text: value } : { isTyping: value !== '' };
     try {
-      await api.post(`/api/meals/${mealId}/typing`, { text: value }, { background: true });
+      await api.post(`/api/meals/${mealId}/typing`, body, { background: true });
     } catch {
       // לא נורא: העדכון הבא ישלח את הטקסט העדכני
     }
@@ -189,6 +205,22 @@ export default function ChatPanel({ mealId }) {
   function handleChange(e) {
     setText(e.target.value);
     queueTyping(e.target.value);
+  }
+
+  // האם המשתתפות רואות את מה שאני כותבת. אם כבר התחלתי לכתוב, מעדכנים מיד גם אצלן
+  async function toggleShowText() {
+    const next = !showText;
+    setShowText(next);
+    showTextRef.current = next;
+    try {
+      await saveShowTypingText(next);
+    } catch (err) {
+      setShowText(!next);
+      showTextRef.current = !next;
+      setError(getErrorMessage(err));
+      return;
+    }
+    if (text.trim()) queueTyping(text);
   }
 
   function toggleSound() {
@@ -248,13 +280,20 @@ export default function ChatPanel({ mealId }) {
             </div>
           );
         })}
-        {/* מה שאחרות כותבות עכשיו, עוד לפני השליחה: בועה מקווקוות עם סמן מהבהב */}
+        {/* מה שאחרות כותבות עכשיו: בועה מקווקוות עם הטקסט, או שלוש נקודות אם הסתירה אותו */}
         {typing.map((t) => (
           <div key={`typing-${t.userId}`} className="chat-item theirs typing-item">
             <span className="avatar xs" title={t.name}>{initials(t.name)}</span>
             <div>
               <div className="chat-meta"><b>{firstName(t.name)} כותבת</b></div>
-              <div className="chat-bubble typing-preview">{t.text}<span className="caret" aria-hidden="true" /></div>
+              {t.text ? (
+                <div className="chat-bubble typing-preview">{t.text}<span className="caret" aria-hidden="true" /></div>
+              ) : (
+                // הסתירה את הטקסט: רואים רק שהיא כותבת
+                <div className="chat-bubble typing-dots" aria-label={`${firstName(t.name)} כותבת`}>
+                  <span /><span /><span />
+                </div>
+              )}
             </div>
           </div>
         ))}
@@ -265,6 +304,11 @@ export default function ChatPanel({ mealId }) {
           <Icon name="send" size={18} />
         </button>
       </form>
+      <div className="chat-privacy">
+        <Icon name={showText ? 'eye' : 'eyeOff'} size={14} />
+        <span>{showText ? 'רואים את הטקסט שלך לפני השליחה.' : 'רואים רק שאת כותבת, בלי הטקסט.'}</span>
+        <button type="button" className="link" onClick={toggleShowText}>{showText ? 'להסתיר' : 'להציג'}</button>
+      </div>
     </div>
   );
 }
